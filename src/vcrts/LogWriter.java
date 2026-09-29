@@ -8,6 +8,10 @@ public class LogWriter {
      * Make all private static final String: CLIENTS_FILE ("clients.txt"), OWNERS_FILE ("owners.txt"), 
      * VEHICLES_FILE ("vehicles.txt"), JOBS_FILE ("jobs.txt")
      */
+	private static final String CLIENTS_FILE = "clients.txt";
+	private static final String OWNERS_FILE = "owners.txt";
+	private static final String VEHICLES_FILE = "vehicles.txt";
+	private static final String JOBS_FILE = "jobs.txt";
 
     /* METHOD: logClient(String clientId, String firstName, String lastName)
      * Make public static. Format client info into comma-separated text and pass to writeToFile().
