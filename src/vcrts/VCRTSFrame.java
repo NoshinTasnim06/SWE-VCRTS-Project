@@ -29,19 +29,20 @@ public class VCRTSFrame extends JFrame {
 		setSize(600, 400);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		
-		CardLayout cardLayout = new CardLayout();
+		cardLayout = new CardLayout();
 		JPanel mainContainer = new JPanel(cardLayout);
 		this.mainContainer = mainContainer;
 		this.clientPanel = new ClientPanel(this);
-		this.ownerPanel = new OwnerPanel(this);
-		this.homePanel = new HomePanel(this);
+		//this.ownerPanel = new OwnerPanel(this);
+		//this.homePanel = new HomePanel(this);
 		
-		mainContainer.add(homePanel, "Home");
+		//mainContainer.add(homePanel, "Home");
 		mainContainer.add(clientPanel, "Client");
-		mainContainer.add(ownerPanel, "Owner");
+		//mainContainer.add(ownerPanel, "Owner");
 		
 		this.add(mainContainer);
-		showPanel("Home");
+		//showPanel("Home");
+		showPanel("Client");
 		
 		
 	}

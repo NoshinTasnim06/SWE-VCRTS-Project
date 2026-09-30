@@ -13,6 +13,8 @@ public class VCRTSMain {
 	public static void main(String[] args) {
 		VCRTSFrame frame = new VCRTSFrame();
 		frame.setVisible(true);
+		ClientPanel p = new ClientPanel(frame); //client testing
+		
 	}
 
 }
