@@ -50,7 +50,7 @@ public class LogWriter {
      * Make public static. Append string line to specified file using FileWriter and PrintWriter.
      * Keep previous records.
      */
-	public static void wrtieToFile(String filename, String data){
+	public static void writeToFile(String filename, String data){
 		try(PrintWriter addData = new PrintWriter(new FileWriter(filename, true))){
 			addData.println(data);
 		}catch (IOException exception){
