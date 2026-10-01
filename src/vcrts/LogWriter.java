@@ -24,8 +24,8 @@ public class LogWriter {
     /* METHOD: logOwner(String ownerId, String firstName, String lastName)
      * Make public static. Format owner info into comma-separated text and pass to writeToFile().
      */
-	public static void logOwner(String ownerID, String firstName, String lastName){
-		String data = clientId + ", " + firstName + ", " + lastName;
+	public static void logOwner(String ownerId, String firstName, String lastName){
+		String data = ownerId + ", " + firstName + ", " + lastName;
 		writeToFile(OWNERS_FILE, data);
 	}
 
@@ -33,25 +33,25 @@ public class LogWriter {
      * Make public static. Format vehicle info into comma-separated text and pass to writeToFile().
      */
 
-	public static logVehicle(String ownerID, String make, String brand, String year, String, license, String residencyTime){
-		String data = ownerId + ", " + make + ", " + brand + ", " + year + ", " + license + ", " residencyTime;
+	public static void logVehicle(String ownerId, String make, String brand, String year, String license, String residencyTime){
+		String data = ownerId + ", " + make + ", " + brand + ", " + year + ", " + license + ", " + residencyTime;
 		writeToFile(VEHICLES_FILE, data);
 	} 
 
     /* METHOD: logJob(String clientId, String jobName, String duration, String deadline)
      * Make public static. Format job info into comma-separated text and pass to writeToFile().
      */
-	public static logJob(String clientId, String jobName, String duration, String deadline){
+	public static void logJob(String clientId, String jobName, String duration, String deadline){
 		String data = clientId + ", " + jobName + ", " + duration + ", " + deadline;
-		wrtieToFile(JOBS_FILE, data);
+		writeToFile(JOBS_FILE, data);
 	}
 
     /* METHOD: writeToFile(String filename, String data)
      * Make public static. Append string line to specified file using FileWriter and PrintWriter.
      * Keep previous records.
      */
-	public static wrtieToFile(String filename, String data){
-		try(PrintWriter addData = new PrintWriter(new FileWriter(filename, true)){
+	public static void wrtieToFile(String filename, String data){
+		try(PrintWriter addData = new PrintWriter(new FileWriter(filename, true))){
 			addData.println(data);
 		}catch (IOException exception){
 			System.out.println("Unable to write to " + filename);
