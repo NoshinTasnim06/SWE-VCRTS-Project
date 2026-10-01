@@ -1,13 +1,11 @@
 package vcrts;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class LogWriter {
-	/* Todo's: add timestamp command
-	 * Attempt to implement Thread Saftey
-	 * Double Check File Creation - Seems not to be working. Must Create file to exist, then code to keep previous records.
-	 */
-	
+
     /* ATTRIBUTES:
      * Make all private static final String: CLIENTS_FILE ("clients.txt"), OWNERS_FILE ("owners.txt"), 
      * VEHICLES_FILE ("vehicles.txt"), JOBS_FILE ("jobs.txt")
@@ -16,6 +14,7 @@ public class LogWriter {
 	private static final String OWNERS_FILE = "owners.txt";
 	private static final String VEHICLES_FILE = "vehicles.txt";
 	private static final String JOBS_FILE = "jobs.txt";
+	private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /* METHOD: logClient(String clientId, String firstName, String lastName)
      * Make public static. Format client info into comma-separated text and pass to writeToFile().
@@ -55,8 +54,9 @@ public class LogWriter {
      * Keep previous records.
      */
 	public static void writeToFile(String filename, String data){
+		String timestamp = LocalDateTime.now().format(TIMESTAMP);
 		try(PrintWriter addData = new PrintWriter(new FileWriter(filename, true))){
-			addData.println(data);
+			addData.println(timestamp + ", " +data);
 		}catch (IOException exception){
 			System.out.println("Unable to write to " + filename);
 			exception.printStackTrace();
