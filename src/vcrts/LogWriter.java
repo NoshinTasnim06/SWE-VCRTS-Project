@@ -3,7 +3,10 @@ package vcrts;
 import java.io.*;
 
 public class LogWriter {
-
+	/* Todo's: add timestamp command
+	 * Attempt to implement Thread Saftey
+	 */
+	
     /* ATTRIBUTES:
      * Make all private static final String: CLIENTS_FILE ("clients.txt"), OWNERS_FILE ("owners.txt"), 
      * VEHICLES_FILE ("vehicles.txt"), JOBS_FILE ("jobs.txt")
