@@ -5,6 +5,7 @@ import java.io.*;
 public class LogWriter {
 	/* Todo's: add timestamp command
 	 * Attempt to implement Thread Saftey
+	 * Double Check File Creation - Seems not to be working. Must Create file to exist, then code to keep previous records.
 	 */
 	
     /* ATTRIBUTES:
