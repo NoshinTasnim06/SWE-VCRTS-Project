@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-public class ClientPanel extends JPanel {
+public class ClientPanel extends BasePanel {
 
 	private CardLayout cardLayout;
 	private JPanel mainContainer;
