@@ -88,33 +88,36 @@ public class LogWriter {
     //-----------------------------------------------------
     // Searches the client or owner records for a user with a specified username.
         public static String[] findUser(String userType, String username){
-                String file;
-                if(userType.equals("Owner")){
-                        file = OWNERS_FILE;
-                }else if(userType.equals("Client")){
-                        file = CLIENTS_FILE;
-                }else{
-                        return null;
-                }
+		String file;
+
+		if(userType.equals("Owner")){
+			file = OWNERS_FILE;
+		}else if(userType.equals("Client")){
+			file = CLIENTS_FILE;
+		}else{
+			return null;
+		}
 
 		if(new File(file).length() == 0){
 			return null;
 		}
-                try(BufferedReader reader = new BufferedReader (new FileReader(file))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                                String[] parts = line.split(", ");
-                                if(parts.length >= 4 && parts[1].equals(username)){
-                                        return parts; //timestamp, clientId/ownerId, fname, lname
-                                }
-                        }
-                }catch(IOException exception){
-                        System.out.println("Error: Unable to read from " + file);
-				exception.printStackTrace();
-                }
 
-                return null;
-        }
+		try(BufferedReader reader = new BufferedReader (new FileReader(file))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] parts = line.split(", ");
+
+				if(parts.length >= 4 && parts[1].equals(username)){
+					return parts; //timestamp, clientId/ownerId, fname, lname
+				}
+			}
+		}catch(IOException exception){
+			System.out.println("Error: Unable to read from " + file);
+			exception.printStackTrace();
+		}
+
+		return null;
+	}
 
 }//End of class
 
