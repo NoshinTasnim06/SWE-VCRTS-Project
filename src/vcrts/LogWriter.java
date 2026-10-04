@@ -23,7 +23,7 @@ public class LogWriter {
     //-----------------------------------------------------
     // Records client information in the client data file.
 	public static synchronized void logClient(String clientId, String firstName, String lastName) {
-		if (new java.io.File(CLIENTS_FILE).length() == 0) {
+		if (new File(CLIENTS_FILE).length() == 0) {
 	        writeHeader(CLIENTS_FILE, "Client ID, First Name, Last Name");
 	    }
 		String data = clientId + ", " + firstName + ", " + lastName;
@@ -33,7 +33,7 @@ public class LogWriter {
     //-----------------------------------------------------
     // Records owner information in the owner data file.
 	public static synchronized void logOwner(String ownerId, String firstName, String lastName){
-		if (new java.io.File(OWNERS_FILE).length() == 0) {
+		if (new File(OWNERS_FILE).length() == 0) {
 	        writeHeader(OWNERS_FILE, "Owner ID, First Name, Last Name");
 	    }
 		String data = ownerId + ", " + firstName + ", " + lastName;
@@ -43,7 +43,7 @@ public class LogWriter {
     //-----------------------------------------------------
     // Records vehicle information in the vehicle data file.
 	public static synchronized void logVehicle(String ownerId, String make, String brand, String year, String license, String residencyTime){
-		if (new java.io.File(VEHICLES_FILE).length() == 0) {
+		if (new File(VEHICLES_FILE).length() == 0) {
 	        writeHeader(VEHICLES_FILE, "Owner ID, Make, Brand, Year, License, Residency Time");
 	    }
 		String data = ownerId + ", " + make + ", " + brand + ", " + year + ", " + license + ", " + residencyTime;
@@ -53,7 +53,7 @@ public class LogWriter {
     //-----------------------------------------------------
     // Records job information in the job data file.
 	public static synchronized void logJob(String clientId, String jobName, String duration, String deadline){
-		if (new java.io.File(JOBS_FILE).length() == 0) {
+		if (new File(JOBS_FILE).length() == 0) {
 	        writeHeader(JOBS_FILE, "Client ID, Job Name, Duration, Deadline");
 	    }
 		String data = clientId + ", " + jobName + ", " + duration + ", " + deadline;
