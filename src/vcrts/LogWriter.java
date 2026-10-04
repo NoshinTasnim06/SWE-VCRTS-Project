@@ -1,10 +1,11 @@
-    /* Project: Vehicular Cloud Real Time System - Milestone 2: GUI
-     * Class: LogWriter.java
-     * Author: Alisen Lam
-     * Date: October 4, 2026
-     * This LogWriter class records client, owner, vehicle, and job information in text files.
-     * It adds a timestamp to each record and allows users to be searched by their ID.
-     */
+/* Project: Vehicular Cloud Real Time System - Milestone 2: GUI
+ * Class: LogWriter.java
+ * Author: Alisen Lam
+ * Date: October 3, 2026
+ * This LogWriter class records client, owner, vehicle, and job information in text files.
+ * It adds a timestamp to each record and allows users to be searched by their ID.
+ */
+
 package vcrts;
 
 import java.io.*;
@@ -42,7 +43,6 @@ public class LogWriter {
     /* METHOD: logVehicle(String ownerId, String make, String brand, String year, String license, String residencyTime)
      * Make public static. Format vehicle info into comma-separated text and pass to writeToFile().
      */
-
 	public static void logVehicle(String ownerId, String make, String brand, String year, String license, String residencyTime){
 		String data = ownerId + ", " + make + ", " + brand + ", " + year + ", " + license + ", " + residencyTime;
 		writeToFile(VEHICLES_FILE, data);
@@ -78,9 +78,9 @@ public class LogWriter {
                 String file;
                 if(userType.equals("Owner")){
                         file = OWNERS_FILE;
-                } else if(userType.equals("Client")){
+                }else if(userType.equals("Client")){
                         file = CLIENTS_FILE;
-                } else {
+                }else{
                         return null;
                 }
 
@@ -92,7 +92,6 @@ public class LogWriter {
                                         return parts; //timestamp, clientId/ownerId, fname, lname
                                 }
                         }
-
                 }catch(IOException exception){
                         //File does not exist yet. No one has registered.       
                 }
@@ -101,4 +100,5 @@ public class LogWriter {
         }
 
 }//End of class
+
 
