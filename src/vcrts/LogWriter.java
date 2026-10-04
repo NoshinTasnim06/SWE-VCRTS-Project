@@ -97,6 +97,9 @@ public class LogWriter {
                         return null;
                 }
 
+		if(new File(file).length() == 0){
+			return null;
+		}
                 try(BufferedReader reader = new BufferedReader (new FileReader(file))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
@@ -106,7 +109,8 @@ public class LogWriter {
                                 }
                         }
                 }catch(IOException exception){
-                        //File does not exist yet. No one has registered.       
+                        System.out.println("Error: Unable to read from " + file);
+			exception.printStackTrace(); 
                 }
 
                 return null;
