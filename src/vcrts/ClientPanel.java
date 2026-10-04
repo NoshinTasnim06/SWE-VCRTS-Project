@@ -24,8 +24,8 @@ public class ClientPanel extends JPanel {
     private JLabel durationError;
     private JLabel deadlineError;
     
-	JPanel login;
-	JPanel newJobUI;
+	private JPanel login;
+	private JPanel newJobUI;
 	
 	//creates panels to switch
 	public ClientPanel(VCRTSFrame frame) {
@@ -45,7 +45,7 @@ public class ClientPanel extends JPanel {
         cardLayout.show(mainContainer, "loginUI");
 	}
 	
-	
+	// structures newJobUI
 	public JPanel jobForm() {
 		JPanel p = new JPanel(new GridBagLayout());
 		p.setBorder(BorderFactory.createTitledBorder("Submit a Job"));
@@ -70,6 +70,7 @@ public class ClientPanel extends JPanel {
         return p;
 	}
 	
+	//structures bottom buttons of newJobUI
 	public JPanel submitPanel()
 	{
 		JPanel p = new JPanel();
@@ -91,7 +92,6 @@ public class ClientPanel extends JPanel {
 
 		submitButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//verify
 				if (validateFields())
 				{
 					handleSubmit();
@@ -101,6 +101,7 @@ public class ClientPanel extends JPanel {
 		return p;
 	}
 	
+	//checks fields
 	public boolean validateFields()
 	{
 		if (jobNameField.getText().trim().length() < 0) //state error
