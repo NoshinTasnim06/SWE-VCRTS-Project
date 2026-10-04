@@ -3,149 +3,139 @@ package vcrts;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
 
-public class ClientPanel extends JPanel {
+public class ClientPanel extends BasePanel {
 
-    /* ATTRIBUTES:
-     * Make all private: appFrame (VCRTSFrame), clientIdField, firstNameField, 
-     * lastNameField, jobNameField, durationField, deadlineField (all JTextField), 
-     * submitButton, backButton (all JButton)
-     */
-	private static final int FRAME_WIDTH = 800;
-	private static final int FRAME_HEIGHT = 600;
 	private CardLayout cardLayout;
 	private JPanel mainContainer;
 	private VCRTSFrame frame;
-	private JTextField clientIdField;
-	private JTextField clientLNameField;
-	private JTextField clientFNameField;
-	private JLabel currJobs = new JLabel("Current Jobs");
-	//private JLabel history;
-	private JLabel logout = new JLabel("Logout");
-	private JButton newJob = new JButton("+ New Job");
+
 	private JLabel jobName = new JLabel("Job Title:");
 	private JLabel jobTime = new JLabel("Estimate Job Duration in Minutes:");
 	private JLabel jobDeadline = new JLabel("Job Deadline in Hours:"); // optional,if none is set, queue
 	private JButton submitButton = new JButton("Submit");
 	private JButton backButton = new JButton("Back");
 	
-	//private int clientIdField;
 	private JTextField jobNameField;
 	private JTextField durationField; //min
 	private JTextField deadlineField; //hr
-	private JTextField jobStatus;
-	JPanel clientUI;
-	JPanel newJobUI;
+	private JLabel jobNameError;
+    private JLabel durationError;
+    private JLabel deadlineError;
+    
+	private JPanel login;
+	private JPanel newJobUI;
 	
-	public ClientPanel(VCRTSFrame frame) { //call creates
+	//creates panels to switch
+	public ClientPanel(VCRTSFrame frame) {
 		this.frame = frame;
-		frame.setTitle("Client");
 		cardLayout = new CardLayout();
 		mainContainer = new JPanel(cardLayout);
-		frame.add(mainContainer);
-		clientUI = new JPanel(new BorderLayout());
 		newJobUI = jobForm();
-		newJob.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e)
-			{
-				cardLayout.show(mainContainer, "newJobUI");
-			}
-		});
-		JPanel header = new JPanel();
-		header.setBackground(Color.GRAY);
-		header.setLayout(new BoxLayout(header, BoxLayout.LINE_AXIS));
-		header.setBorder(BorderFactory.createEmptyBorder(10,20,20,20));
-		header.add(Box.createHorizontalGlue());
-		header.add(currJobs);
-		header.add(Box.createRigidArea(new Dimension(30,0)));
-		header.add(logout);
-		currJobs.setAlignmentX(RIGHT_ALIGNMENT);
-		logout.setAlignmentX(RIGHT_ALIGNMENT);
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
-		buttonPanel.add(Box.createHorizontalGlue());
-		buttonPanel.setBorder(BorderFactory.createEmptyBorder(15,10,20,20));
-		buttonPanel.add(newJob);
-		newJob.setAlignmentX(RIGHT_ALIGNMENT);
-		JPanel body = new JPanel();
-		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-		body.add(buttonPanel);
-		clientUI.add(header, BorderLayout.NORTH);
-		clientUI.add(body, BorderLayout.CENTER);
-		//clientUI.add(id, BorderLayout.PAGE_END);
-		mainContainer.add(clientUI, "clientUI");
-		mainContainer.add(newJobUI, "newJobUI");
-		cardLayout.show(mainContainer, "clientUI");
-		//setSize(FRAME_WIDTH,FRAME_HEIGHT); 
-	}
-	
-	public JTextField createTextField(JTextField f, int size) {
+		login = createLoginPanel("Client",
+                () -> {cardLayout.show(mainContainer, "newJobUI");},
+            () -> frame.showPanel("Home"));
 		
-		f = new JTextField(size); //parse later
-		return f;
+		mainContainer.add(login, "loginUI");
+        mainContainer.add(newJobUI, "newJobUI");
+
+        setLayout(new BorderLayout());
+        add(mainContainer);
+        cardLayout.show(mainContainer, "loginUI");
 	}
 	
-	
-	public JPanel jobForm() { //jobform arrange
-		JPanel p = new JPanel();
-		//clientFNameField = new JTextField(30);
-		jobNameField = new JTextField(30);
-		durationField = new JTextField(4);
-		deadlineField = new JTextField(3);
-		p.add(jobName);
-		p.add(jobNameField);
-		p.add(jobTime);
-		p.add(jobDeadline); 
-		p.add(submitPanel());
-		return p;
+	// structures newJobUI
+	public JPanel jobForm() {
+		JPanel p = new JPanel(new GridBagLayout());
+		p.setBorder(BorderFactory.createTitledBorder("Submit a Job"));
+		jobNameField = new JTextField(FIELD_WIDTH);
+        durationField = new JTextField(FIELD_WIDTH);
+        deadlineField = new JTextField(FIELD_WIDTH);
+        jobNameError = createErrorLabel("Job title is required");
+        durationError = createErrorLabel("Must enter a valid duration greater than 0");
+        deadlineError = createErrorLabel("Must be a number greater than 0, or leave blank");
+
+        nextRow = 0;
+        addFieldRow(p, jobName.getText(), jobNameField, jobNameError);
+        addFieldRow(p, jobTime.getText(), durationField, durationError);
+        addFieldRow(p, jobDeadline.getText(), deadlineField, deadlineError);
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = nextRow;
+        c.gridwidth = 2;
+        c.anchor = GridBagConstraints.EAST;
+        p.add(submitPanel(), c);
+        return p;
 	}
+	
+	//structures bottom buttons of newJobUI
 	public JPanel submitPanel()
 	{
 		JPanel p = new JPanel();
+		p.setLayout(new BoxLayout(p, BoxLayout.LINE_AXIS));
+		p.setBorder(BorderFactory.createEmptyBorder(10,20,20,20));
+		p.add(Box.createHorizontalGlue());
 		p.add(backButton);
+		p.add(Box.createRigidArea(new Dimension(15,0)));
 		p.add(submitButton);
 		
 		backButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
-				cardLayout.show(mainContainer,"clientUI");
+				clearFields();
+				userId = null;
+				cardLayout.show(mainContainer,"loginUI");
 			}
 		});
 
 		submitButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//verify
-				if (true)
+				if (validateFields())
 				{
-					jobStatus.setText("Job Submitted");
-					submitButton.hide();
+					handleSubmit();
 				}
-				else
-					jobStatus.setText("Error");
 			}
 		});
 		return p;
 	}
 	
+	//checks fields
+	public boolean validateFields()
+	{
+		boolean allValid = true;
 
-    /* CONSTRUCTOR: JobPanel(VCRTSFrame frame)
-     * Initialize text fields and buttons, set up action listeners for submit 
-     * and back, and arrange components in layout.
-     */
+        allValid &= checkField(jobNameField, jobNameError, !isBlank(jobNameField));
+        allValid &= checkField(durationField, durationError,
+                isPositiveNumber(durationField.getText()));
+        allValid &= checkField(deadlineField, deadlineError,
+                isBlank(deadlineField) || isPositiveNumber(deadlineField.getText()));
+        return allValid;
+	}
+	
+	public void clearFields()
+	{
+		jobNameField.setText("");
+		durationField.setText("");
+		deadlineField.setText("");
+		checkField(jobNameField, jobNameError, true);
+        checkField(durationField, durationError, true);
+        checkField(deadlineField, deadlineError, true);
+	}
+	
+	public void handleSubmit()
+	{
+		String title = jobNameField.getText().trim();
+        String time = durationField.getText().trim();
+        String deadline = deadlineField.getText().trim();
+        if (deadline.isEmpty())
+            deadline = "None";
 
-
-    /* METHOD: validateFields()
-     * Check if all fields are filled and numeric fields (duration, deadline) contain 
-     * valid numbers. Return boolean.
-     */
-
-    /* METHOD: handleSubmit()
-     * If validateFields() is true, extract input text, pass to LogWriter.logClient() 
-     * and LogWriter.logJob(), show pop up, and call clearFields().
-     */
-
-    /* METHOD: clearFields()
-     * Reset all text fields to empty strings.
-     */
-
+        LogWriter.logJob(userId, title, time, deadline);
+        JOptionPane.showMessageDialog(this,
+                "Job submitted successfully!",
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+        clearFields();
+	}
 }

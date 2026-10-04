@@ -3,57 +3,55 @@ package vcrts;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * This class serves as the main application frame for the Vehicular Cloud Resource Trading System (VCRTS),
+ * initializing the window dimensions and managing screen navigation between the Home, Owner, and Client views 
+ * using a CardLayout manager.
+ */
 public class VCRTSFrame extends JFrame {
 
-    /* ATTRIBUTES:
-     * Make all private: cardLayout (CardLayout), mainContainer (JPanel), homePanel (HomePanel), 
-     * ownerPanel (OwnerPanel), jobPanel (JobPanel)
-     */
-	
-	private CardLayout cardLayout;
-	private JPanel mainContainer;
-	private HomePanel homePanel;
-	private OwnerPanel ownerPanel;
-	private ClientPanel clientPanel;
+    private final CardLayout cardLayout;
+    private final JPanel mainPanel;
 
-    /* CONSTRUCTOR: VCRTSFrame()
-     * Set window title, default close operation (EXIT_ON_CLOSE), and size (e.g., 600x400).
-     * Initialize cardLayout and mainContainer with cardLayout.
-     * Instantiate homePanel, ownerPanel, and jobPanel passing 'this'.
-     * Add panels to mainContainer using cardLayout keys ("HOME", "OWNER", "JOB").
-     * Add mainContainer to frame and call showPanel("HOME").
-     */
-	
-	public VCRTSFrame() {
-		setTitle("VCRTS");
-		setSize(600, 400);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		
-		cardLayout = new CardLayout();
-		JPanel mainContainer = new JPanel(cardLayout);
-		this.mainContainer = mainContainer;
-		this.clientPanel = new ClientPanel(this);
-		//this.ownerPanel = new OwnerPanel(this);
-		//this.homePanel = new HomePanel(this);
-		
-		//mainContainer.add(homePanel, "Home");
-		mainContainer.add(clientPanel, "Client");
-		//mainContainer.add(ownerPanel, "Owner");
-		
-		this.add(mainContainer);
-		//showPanel("Home");
-		showPanel("Client");
-		
-		
-	}
+    // ---------------------------------------------------------------------
+    // This constructor configures the application window properties, instantiates 
+    // the primary view panels while passing a reference to this frame, 
+    // and displays the initial home screen.
+    public VCRTSFrame() {
+        setTitle("Vehicular Cloud Resource Trading System");
+        setSize(BasePanel.FRAME_WIDTH, BasePanel.FRAME_HEIGHT);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
 
-    /* METHOD: showPanel(String panelName)
-     * Make public void.
-     * Use cardLayout.show(mainContainer, panelName) to switch visible panel.
-     */
-	
-	public void showPanel(String panelName) {
-		cardLayout.show(mainContainer, panelName);
-	}
+        // Initialize CardLayout and the parent container panel
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
 
+        // Instantiate child view panels passing this frame reference to enable screen switching
+        HomePanel homePanel = new HomePanel(this);
+        OwnerPanel ownerPanel = new OwnerPanel(this);
+        ClientPanel clientPanel = new ClientPanel(this);
+
+        // Register child view panels with unique string keys inside the container
+        mainPanel.add(homePanel, "Home");
+        mainPanel.add(ownerPanel, "Owner");
+        mainPanel.add(clientPanel, "Client");
+
+        // Add the container panel to the window frame content pane
+        add(mainPanel);
+
+        // Transition the view to display the home screen upon launch
+        showPanel("Home");
+
+        setVisible(true);
+    }
+
+    // ---------------------------------------------------------------------
+    // This method transitions the active display view by requesting the CardLayout manager 
+    // to bring the panel associated with the given key to the foreground.
+    public void showPanel(String name) {
+        if (cardLayout != null && mainPanel != null) {
+            cardLayout.show(mainPanel, name);
+        }
+    }
 }

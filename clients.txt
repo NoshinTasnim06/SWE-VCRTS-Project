@@ -1,0 +1,2 @@
+Timestamp, Client ID, First Name, Last Name
+2026-10-04 17:06:26, sam123, sam, smith
