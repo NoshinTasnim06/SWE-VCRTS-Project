@@ -102,7 +102,7 @@ public class HomePanel extends JPanel {
 
  // ---------------------------------------------------------------
  // This method is to to test the HomePanel by itself.
- public static void main(String[] args) {
+    public static void main(String[] args) {
 
      JFrame testFrame = new JFrame("HomePanel Test");
 
