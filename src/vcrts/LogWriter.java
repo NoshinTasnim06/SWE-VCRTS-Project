@@ -87,7 +87,7 @@ public class LogWriter {
 
     //-----------------------------------------------------
     // Searches the client or owner records for a user with a specified username.
-        public static String[] findUser(String userType, String username){
+	public static String[] findUser(String userType, String username){
 		String file;
 
 		if(userType.equals("Owner")){
