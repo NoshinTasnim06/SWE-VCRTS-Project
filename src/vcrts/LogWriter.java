@@ -1,3 +1,10 @@
+    /* Project: Vehicular Cloud Real Time System - Milestone 2: GUI
+     * Class: LogWriter.java
+     * Author: Alisen Lam
+     * Date: October 4, 2026
+     * This LogWriter class records client, owner, vehicle, and job information in text files.
+     * It adds a timestamp to each record and allows users to be searched by their ID.
+     */
 package vcrts;
 
 import java.io.*;
@@ -53,7 +60,7 @@ public class LogWriter {
      * Make public static. Append string line to specified file using FileWriter and PrintWriter.
      * Keep previous records.
      */
-	public static void writeToFile(String filename, String data){
+	public static synchronized void writeToFile(String filename, String data){
 		String timestamp = LocalDateTime.now().format(TIMESTAMP);
 		try(PrintWriter addData = new PrintWriter(new FileWriter(filename, true))){
 			addData.println(timestamp + ", " +data);
@@ -62,6 +69,36 @@ public class LogWriter {
 			exception.printStackTrace();
 		}		
 	}
+
+
+    /* METHOD: findUser(String userType, String username)
+     * Make public static. Search the client or owner file and return matching user information. 
+     */
+        public static String[] findUser(String userType, String username){
+                String file;
+                if(userType.equals("Owner")){
+                        file = OWNERS_FILE;
+                } else if(userType.equals("Client")){
+                        file = CLIENTS_FILE;
+                } else {
+                        return null;
+                }
+
+                try(BufferedReader reader = new BufferedReader (new FileReader(file))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                                String[] parts = line.split(", ");
+                                if(parts.length >= 4 && parts[1].equals(username)){
+                                        return parts; //timestamp, clientId/ownerId, fname, lname
+                                }
+                        }
+
+                }catch(IOException exception){
+                        //File does not exist yet. No one has registered.       
+                }
+
+                return null;
+        }
 
 }//End of class
 
