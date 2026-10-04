@@ -104,23 +104,14 @@ public class ClientPanel extends BasePanel {
 	//checks fields
 	public boolean validateFields()
 	{
-		if (jobNameField.getText().trim().length() < 0) //state error
-			return false;
-		try
-		{
-			int t = 0;
-			int t2 = 0;
-			t = Integer.parseInt(durationField.getText());
-			if (!deadlineField.getText().trim().equals(""))
-				t2 = Integer.parseInt(deadlineField.getText());
-			if (t <= 0 || t2 <= 0)
-				return false;
-		}
-		catch (NumberFormatException error)
-		{
-			return false;
-		}
-		return true;
+		boolean allValid = true;
+
+        allValid &= checkField(jobNameField, jobNameError, !isBlank(jobNameField));
+        allValid &= checkField(durationField, durationError,
+                isPositiveNumber(durationField.getText()));
+        allValid &= checkField(deadlineField, deadlineError,
+                isBlank(deadlineField) || isPositiveNumber(deadlineField.getText()));
+        return allValid;
 	}
 	
 	public void clearFields()
@@ -128,42 +119,23 @@ public class ClientPanel extends BasePanel {
 		jobNameField.setText("");
 		durationField.setText("");
 		deadlineField.setText("");
+		checkField(jobNameField, jobNameError, true);
+        checkField(durationField, durationError, true);
+        checkField(deadlineField, deadlineError, true);
 	}
 	
 	public void handleSubmit()
 	{
-		String title = jobNameField.getText();
-		int time = Integer.parseInt(durationField.getText());
-		int deadline = Integer.parseInt(deadlineField.getText());
-		//log
-		//logJob(acc.getId(),title,time,deadline);
-		clearFields();
-		jobSubmitStatus.setText("Job Submitted successfully!");
-		//ui format dash
-		JPanel p = new JPanel();
-		JLabel l = new JLabel(title);
-		JLabel l2 = new JLabel(durationField.getText());
-		JLabel l3 = new JLabel(deadlineField.getText());
-		JLabel status = new JLabel("Pending");
-		JButton cancel = new JButton("X");
-		p.setBorder(BorderFactory.createEmptyBorder(10,20,20,20));
-		p.setBackground(Color.GRAY); //pad, format
-		p.setLayout(new BoxLayout(p, BoxLayout.LINE_AXIS));
-		p.add(l);
-		p.add(l2);
-		p.add(l3);
-		p.add(status);
-		p.add(Box.createHorizontalGlue());
-		p.add(cancel);
-		JPanel dash = (JPanel) newJob.getParent().getParent(); //return location of dashboard
-		dash.add(p);
-		cancel.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e)
-			{
-				dash.remove(cancel);
-				dash.revalidate();
-				dash.repaint();
-			}
-		});
+		String title = jobNameField.getText().trim();
+        String time = durationField.getText().trim();
+        String deadline = deadlineField.getText().trim();
+        if (deadline.isEmpty())
+            deadline = "None";
+
+        LogWriter.logJob(userId, title, time, deadline);
+        JOptionPane.showMessageDialog(this,
+                "Job submitted successfully!",
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+        clearFields();
 	}
 }
