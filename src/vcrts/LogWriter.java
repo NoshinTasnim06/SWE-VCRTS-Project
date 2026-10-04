@@ -110,7 +110,7 @@ public class LogWriter {
                         }
                 }catch(IOException exception){
                         System.out.println("Error: Unable to read from " + file);
-			exception.printStackTrace();
+				exception.printStackTrace();
                 }
 
                 return null;
