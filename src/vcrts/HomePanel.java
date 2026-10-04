@@ -16,21 +16,28 @@ import java.awt.*;
 
 public class HomePanel extends JPanel {
 
+    // Stores the main application frame so this panel can request screen changes.
     private VCRTSFrame frame;
+
+    // Navigation buttons for the two main user roles.
     private JButton ownerButton;
     private JButton clientButton;
 
-    //constructor creates and organizes the home screen.
+    // ---------------------------------------------------------------------
+    // This constructor builds and organizes the HomePanel interface and
+    // stores a reference to the main frame for navigation between screens.
     public HomePanel(VCRTSFrame frame) {
 
         this.frame = frame;
 
+        // Divide the home screen into a header, information area,
+        // and navigation section.
         setLayout(new BorderLayout(20, 20));
         setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        //the title at the top of the home screen.
+        // Create the title and subtitle displayed at the top of the screen.
         JLabel titleLabel = new JLabel("Vehicular Cloud Resource Trading System");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setFont(BasePanel.TITLE_FONT);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JLabel subtitleLabel = new JLabel(
@@ -38,13 +45,15 @@ public class HomePanel extends JPanel {
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 15));
         subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
+        // Stack the title and subtitle vertically.
         JPanel headerPanel = new JPanel(new GridLayout(2, 1, 5, 5));
         headerPanel.add(titleLabel);
         headerPanel.add(subtitleLabel);
 
         add(headerPanel, BorderLayout.NORTH);
 
-        //Explains the two main options available to the user.
+        // Display instructions explaining the two main user roles.
+        // Basic HTML formatting is used for headings and bullet points.
         JLabel informationLabel = new JLabel(
                 "<html>"
                         + "<h3>Welcome to VCRTS</h3>"
@@ -68,52 +77,33 @@ public class HomePanel extends JPanel {
         informationLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         informationLabel.setVerticalAlignment(SwingConstants.TOP);
 
+        // Place the instructions inside their own panel for spacing and layout.
         JPanel informationPanel = new JPanel(new BorderLayout());
         informationPanel.setBorder(new EmptyBorder(10, 30, 10, 30));
         informationPanel.add(informationLabel, BorderLayout.CENTER);
 
         add(informationPanel, BorderLayout.CENTER);
 
-        //buttons that take the user to the correct screen.
+        // Create navigation buttons for vehicle owners and task clients.
         ownerButton = new JButton("I am a Vehicle Owner");
         clientButton = new JButton("I am a Task Client");
 
         ownerButton.setPreferredSize(new Dimension(190, 40));
         clientButton.setPreferredSize(new Dimension(190, 40));
 
-        ownerButton.addActionListener(event -> {
-            if (frame != null) {
-                frame.showPanel("Owner");
-            }
-        });
+        // Ask VCRTSFrame to display the Owner screen when clicked.
+        ownerButton.addActionListener(event -> frame.showPanel("Owner"));
 
-        clientButton.addActionListener(event -> {
-            if (frame != null) {
-                frame.showPanel("Client");
-            }
-        });
+        // Ask VCRTSFrame to display the Client screen when clicked.
+        clientButton.addActionListener(event -> frame.showPanel("Client"));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        // Placed both navigation buttons next to each other and center them.
+        JPanel buttonPanel = new JPanel(
+                new FlowLayout(FlowLayout.CENTER, 20, 10));
+
         buttonPanel.add(ownerButton);
         buttonPanel.add(clientButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
     }
-
- // ---------------------------------------------------------------
- // This method is to to test the HomePanel by itself.
-    public static void main(String[] args) {
-
-     JFrame testFrame = new JFrame("HomePanel Test");
-
-     testFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-     testFrame.setSize(800, 600);
-     testFrame.setLocationRelativeTo(null);
-
-     HomePanel homePanel = new HomePanel(null);
-
-     testFrame.add(homePanel);
-     testFrame.setVisible(true);
- }
-
 }
