@@ -102,8 +102,8 @@ public class OwnerPanel extends JPanel {
 		addFieldRow("Residency Time (hours):", residencyTimeField, residencyTimeError);
 
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-		buttonPanel.add(submitButton);
 		buttonPanel.add(backButton);
+		buttonPanel.add(submitButton);
 
 		GridBagConstraints constraints = new GridBagConstraints();
 		constraints.gridx = 1;
