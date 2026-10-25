@@ -1,0 +1,2 @@
+Timestamp, Owner ID, Make, Brand, Year, License, Residency Time
+2026-10-04 17:06:10, sam123, accord, honda, 2016, ZF123, 3
