@@ -14,10 +14,6 @@ public class Job implements Comparable<Job> {
 	private Client client;
 
 	public Job(String jobID, String jobName, int duration, LocalDateTime deadline) {
-		if (duration <= 0) {
-			throw new IllegalArgumentException("Duration must be positive.");
-		}
-
 		this.jobID = jobID;
 		this.jobName = jobName;
 		this.duration = duration;
@@ -64,10 +60,6 @@ public class Job implements Comparable<Job> {
 	}
 
 	public void updateProgress(int percent) {
-		if (percent < 0 || percent > 100) {
-			throw new IllegalArgumentException("Progress must be between 0 and 100.");
-		}
-
 		progress = percent;
 
 		if (progress == 100) {
