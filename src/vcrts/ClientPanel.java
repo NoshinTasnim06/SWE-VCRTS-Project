@@ -26,6 +26,7 @@ public class ClientPanel extends BasePanel {
     
 	private JPanel login;
 	private JPanel newJobUI;
+	JPanel clientUI;
 	
 	//creates panels to switch
 	public ClientPanel(VCRTSFrame frame) {
@@ -68,6 +69,49 @@ public class ClientPanel extends BasePanel {
         c.anchor = GridBagConstraints.EAST;
         p.add(submitPanel(), c);
         return p;
+	}
+	
+	public JPanel clientDash(/*clientAcc a*/)
+	{
+		JPanel p = new JPanel();
+		JPanel header = new JPanel();
+		JPanel body = new JPanel(); //if there are multiple pages, layout should be cardLayout
+		JLabel clientID = new JLabel("ClientID:");
+		JButton logout = buttonForm("Logout");
+		JButton newJobButton = new JButton();
+		p.setLayout(new BorderLayout());
+		
+		header.setBackground(Color.GRAY);
+		header.setLayout(new BoxLayout(header, BoxLayout.LINE_AXIS));
+		header.setBorder(BorderFactory.createEmptyBorder(10,10,20,10));
+		header.add(clientID);
+		header.add(Box.createHorizontalGlue());
+		header.add(logout);
+		
+		body.setLayout(new BoxLayout(header, BoxLayout.PAGE_AXIS));
+		body.add(newJobButton);
+		//client jobList should be looped to create job rows, repaint if necessary
+		
+		p.add(header, BorderLayout.NORTH);
+		p.add(body, BorderLayout.CENTER);
+		
+		logout.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				cardLayout.show(mainContainer, "loginUI");
+			}
+		});
+		return p;
+	}
+	
+	//format buttons in header
+	public JButton buttonForm(String s) {
+		JButton b = new JButton(s);
+		b.setBorderPainted(false);
+		b.setFocusPainted(false);
+		b.setContentAreaFilled(false);
+		b.setOpaque(false);
+		return b;
 	}
 	
 	//structures bottom buttons of newJobUI
