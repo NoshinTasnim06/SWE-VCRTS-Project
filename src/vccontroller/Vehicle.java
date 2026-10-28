@@ -40,6 +40,10 @@ public class Vehicle {
 	public Owner getOwner() {
 		return owner;
 	}
+	
+	public LocalDateTime getDepartureTime() {
+		return departureTime;
+	}
 
 	public boolean isAvailable() {
 		return status.equals("AVAILABLE");

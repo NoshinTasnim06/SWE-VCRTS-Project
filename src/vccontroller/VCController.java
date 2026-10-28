@@ -1,6 +1,7 @@
 package vccontroller;
 
 import java.util.*;
+import java.time.*;
 
 /* Need to implement Or correct
  * + assignJob(job: Job): void
@@ -86,5 +87,48 @@ public class VCController {
 		if (job != null) {
 			// assign job
 		}
+	}
+	
+	public void assignJob(Job job)
+	{
+		Vehicle v = null;
+		if (availableVehicles.size() == 0)
+			return;
+		for (int i = 0; i < availableVehicles.size(); i++)
+		{
+			Vehicle curr = availableVehicles.get(i);
+			if (job.getDuration() <= 
+					Duration.between(LocalDateTime.now(),curr.getDepartureTime()).toMinutes())
+			{
+				v = availableVehicles.remove(i);
+				break;
+			}
+		}
+		if (v == null)
+			v = availableVehicles.remove(0);
+		//job.getDuration() < limit
+		checkpoints.add(v.createCheckpoint(job));
+		v.runJob(job);
+	}
+	
+	public double getWaitTime(Job job)
+	{
+		int time = 0;
+		int count = 0;
+		PriorityQueue<Job> jobs = jobQueue;
+		String jobID = job.getJobID();
+		
+		if (availableVehicles.size() > 0) //how to handle case of 0 vehicle
+			return time;
+		
+		while (jobs.size() != 0)
+		{
+				Job curr = jobs.poll();
+				time += curr.getDuration();
+				count++;
+				if (curr.getJobID().equals(jobID))
+					break;
+		}
+		return Math.round((time/(count*1.0)*100))/100.0;
 	}
 }
