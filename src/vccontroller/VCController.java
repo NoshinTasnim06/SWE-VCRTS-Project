@@ -109,26 +109,101 @@ public class VCController {
 		//job.getDuration() < limit
 		checkpoints.add(v.createCheckpoint(job));
 		v.runJob(job);
+		job.setStatus("ASSIGNED");
+		jobsInProgress.add(job);
 	}
 	
-	public double getWaitTime(Job job)
+	public int getWaitTime(Job job)
 	{
-		int time = 0;
-		int count = 0;
+		int time = -1;
 		PriorityQueue<Job> jobs = jobQueue;
 		String jobID = job.getJobID();
 		
-		if (availableVehicles.size() > 0) //how to handle case of 0 vehicle
+		if (availableVehicles.size() == 0 && jobsInProgress.size() == 0)
 			return time;
+		if (jobs.size() <= availableVehicles.size())
+			return 0;
+		
+		time = nextFreeVehicleTime();
+		if (time == -1)
+			return time; //no available future vehicles
 		
 		while (jobs.size() != 0)
 		{
-				Job curr = jobs.poll();
-				time += curr.getDuration();
-				count++;
-				if (curr.getJobID().equals(jobID))
-					break;
+			Job curr = jobs.poll();
+			if (curr.getJobID().equals(jobID))
+				break;	
+			time += curr.getDuration();
 		}
-		return Math.round((time/(count*1.0)*100))/100.0;
+		return time;
+	}
+	
+	/*
+	public boolean nextFreeVehicle(Job job, int remainingJobTime)
+	{
+		String jobID = job.getJobID();
+		for (Checkpoint c: checkpoints)
+		{
+			if (c.getJobID().equals(jobID) &&
+			Duration.between(LocalDateTime.now(),findVehicle(c.getVehicleID()).getDepartureTime()).toMinutes()
+			> remainingJobTime) //find departure given vehicleID
+				return true;
+				
+		}
+		return false;
+	}*/
+	
+	public int nextFreeVehicleTime()
+	{
+		int time = -1;
+		for (Job j: jobsInProgress)
+		{
+			int remainingJobTime = (100 - j.getProgress()) * j.getDuration();
+			for (Checkpoint c: checkpoints)
+			{
+				if (c.getJobID().equals(j.getJobID()) &&
+						Duration.between(LocalDateTime.now(),findVehicle(c.getVehicleID()).getDepartureTime()).toMinutes()
+						> remainingJobTime 
+						&& (remainingJobTime < time || time == -1)) //find departure given vehicleID
+					time = remainingJobTime;
+			}
+		}
+		return time;
+	}
+	
+	public Vehicle findVehicle(String vehicleID) {
+		return vehicles.get(vehicleID);
+	}
+	
+	public int getAverageWaitTime()
+	{
+		int time = -1;
+		int count = jobQueue.size();
+		if (count >= 0 && availableVehicles.size() == 0 && jobsInProgress.size() == 0)
+		{
+			if (count == 0)
+				return 0;
+			else
+				return time;
+		}
+		if (count <= 1 && jobsInProgress.size() == 0 || (count <= availableVehicles.size()))
+			return 0;
+		
+		time = nextFreeVehicleTime();
+		if (time == -1)
+			return time; //future vehicles are unavailable
+		
+		PriorityQueue<Job> jobs = jobQueue;
+		int waitTime = time;
+		for (int j = 0; j < jobs.size() - 1; j++)
+		{
+			waitTime += jobs.peek().getDuration();
+			time += waitTime;
+		}
+		
+		if (count == 0)
+			return time; //no jobs waiting, jobs in queue
+		else
+			return time/count;
 	}
 }
