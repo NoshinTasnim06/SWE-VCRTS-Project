@@ -25,6 +25,7 @@ public class VCController {
 
 	private Map<String, Client> clients;
 	private Map<String, Owner> owners;
+	private Map<String, Vehicle> vehicles;
 
 	public VCController(double paymentRate, Server server) {
 		this.redundancyLevel = 1;
@@ -37,6 +38,7 @@ public class VCController {
 		checkpoints = new ArrayList<>();
 		clients = new HashMap<>();
 		owners = new HashMap<>();
+		vehicles = new HashMap<>();
 	}
 
 	public Client findClient(String clientID) {
@@ -45,6 +47,10 @@ public class VCController {
 
 	public Owner findOwner(String ownerID) {
 		return owners.get(ownerID);
+	}
+	
+	public Vehicle findVehicle(String vehicleID) {
+		return vehicles.get(vehicleID);
 	}
 
 	public void addJobToQueue(Job job) {
@@ -57,6 +63,7 @@ public class VCController {
 		if (vehicle != null && vehicle.isAvailable() && !availableVehicles.contains(vehicle)) {
 			availableVehicles.add(vehicle);
 		}
+		vehicles.put(vehicle.getVehicleID(), vehicle);
 	}
 
 	public void setRedundancyLevel(int level) {
@@ -169,10 +176,6 @@ public class VCController {
 			}
 		}
 		return time;
-	}
-	
-	public Vehicle findVehicle(String vehicleID) {
-		return vehicles.get(vehicleID);
 	}
 	
 	public int getAverageWaitTime()
