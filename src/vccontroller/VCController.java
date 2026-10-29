@@ -206,4 +206,133 @@ public class VCController {
 		else
 			return time/count;
 	}
+	// ---------------------------------------------------------------------
+	// This method continues a job on a new vehicle from a saved checkpoint.
+	public void restartJob(Job job, Vehicle vehicle, Checkpoint cp) {
+		if (job == null || vehicle == null || cp == null) {
+			throw new IllegalArgumentException("Job, vehicle and checkpoint are all required.");
+		}
+		if (!cp.getJobID().equals(job.getJobID())) {
+			throw new IllegalArgumentException("Checkpoint does not belong to this job.");
+		}
+		if (job.getStatus().equals("COMPLETED") || job.getStatus().equals("CANCELLED")) {
+			throw new IllegalStateException("Only unfinished jobs can be restarted.");
+		}
+		if (!vehicle.isAvailable()) {
+			throw new IllegalStateException("Vehicle is not available.");
+		}
+
+		// Give the new vehicle the saved state (this marks the vehicle as busy)
+		cp.copyTo(vehicle);
+
+		// Work done after the checkpoint was lost, so the job resumes from the
+		// checkpoint's progress.
+		if (cp.getProgressSnapshot() < 100) {
+			job.updateProgress(cp.getProgressSnapshot());
+		}
+		job.setStatus("IN_PROGRESS");
+
+		availableVehicles.remove(vehicle);
+		jobQueue.remove(job);
+		runningJobs.put(vehicle, job);
+		if (!jobsInProgress.contains(job)) {
+			jobsInProgress.add(job);
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// This method takes a job out of the system once it is completed, cancelled
+	// or failed. Every vehicle running it has its data erased and is made
+	// available again, and the job's checkpoints are discarded. Completed jobs
+	// are also sent to the server and their cost is charged to the client.
+	public void removeJob(Job job, String status) {
+		if (job == null || status == null) {
+			throw new IllegalArgumentException("Job and status are required.");
+		}
+
+		String finalStatus = status.trim().toUpperCase();
+		if (!finalStatus.equals("COMPLETED") && !finalStatus.equals("CANCELLED")
+				&& !finalStatus.equals("FAILED")) {
+			throw new IllegalArgumentException("Status must be COMPLETED, CANCELLED or FAILED.");
+		}
+
+		job.setStatus(finalStatus);
+		jobQueue.remove(job);
+		jobsInProgress.remove(job);
+
+		// Free every vehicle that was running this job. With redundancy there
+		// can be more than one.
+		Iterator<Map.Entry<Vehicle, Job>> entries = runningJobs.entrySet().iterator();
+		while (entries.hasNext()) {
+			Map.Entry<Vehicle, Job> entry = entries.next();
+			if (entry.getValue() == job) {
+				Vehicle vehicle = entry.getKey();
+				vehicle.eraseData();
+				addVehicleToList(vehicle);
+				entries.remove();
+			}
+		}
+
+		// The job is finished, so its saved states are no longer needed
+		checkpoints.removeIf(cp -> cp.getJobID().equals(job.getJobID()));
+
+		if (finalStatus.equals("COMPLETED")) {
+			server.storeCompletedJob(job);
+
+			if (job.getClient() != null) {
+				job.getClient().addCharge(calculateJobCost(job));
+			}
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// This method prepares a vehicle to leave the lot. If it is running a job,
+	// a checkpoint is saved first. When no other vehicle is still running that
+	// job, the job restarts from the checkpoint on another available vehicle,
+	// or goes back in the queue if none is free. The vehicle's data is erased
+	// before it departs.
+	public void handleDeparture(Vehicle vehicle) {
+		if (vehicle == null) {
+			throw new IllegalArgumentException("Vehicle is required.");
+		}
+
+		Job job = runningJobs.remove(vehicle);
+		availableVehicles.remove(vehicle);
+
+		if (job != null) {
+			Checkpoint cp = vehicle.createCheckpoint(job);
+			checkpoints.add(cp);
+
+			// With redundancy, another vehicle may still be running the same
+			// job, in which case the job simply continues there
+			if (!runningJobs.containsValue(job)) {
+				Vehicle replacement = findReplacementVehicle();
+
+				if (replacement != null) {
+					restartJob(job, replacement, cp);
+				} else {
+					// No vehicle is free: keep the checkpoint and wait in the queue
+					jobsInProgress.remove(job);
+					job.setStatus("QUEUED");
+					jobQueue.offer(job);
+				}
+			}
+		}
+
+		// Erase the vehicle's copy of the computation, then let it leave
+		vehicle.eraseData();
+		vehicle.depart();
+	}
+
+	// ---------------------------------------------------------------------
+	// This method returns the first vehicle in the available list that is
+	// free to take over a job, or null if there is none.
+	private Vehicle findReplacementVehicle() {
+		for (Vehicle candidate : availableVehicles) {
+			if (candidate.isAvailable()) {
+				return candidate;
+			}
+		}
+		return null;
+	}
 }
