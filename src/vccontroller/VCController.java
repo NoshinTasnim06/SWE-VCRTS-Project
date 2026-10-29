@@ -92,15 +92,37 @@ public class VCController {
 		Job job = jobQueue.peek();
 
 		if (job != null) {
-			// assign job
+			assignJob(job);
 		}
 	}
 	
 	public void assignJob(Job job)
 	{
+		Vehicle v = recruitVehicle(job);
+		if (v == null)
+			return;
+		
+		for (Checkpoint c : checkpoints)
+		{
+			if (c.getJobID() == job.getJobID())
+			{
+				restartJob(job, v, c);
+				return;
+			}
+		}
+		checkpoints.add(v.createCheckpoint(job));
+		v.runJob(job);
+		job.setStatus("IN_PROGRESS");
+		jobsInProgress.add(job);
+	}
+	
+	// prioritize vehicle with enough available time
+	public Vehicle recruitVehicle(Job job)
+	{
 		Vehicle v = null;
 		if (availableVehicles.size() == 0)
-			return;
+			return v;
+		
 		for (int i = 0; i < availableVehicles.size(); i++)
 		{
 			Vehicle curr = availableVehicles.get(i);
@@ -111,13 +133,10 @@ public class VCController {
 				break;
 			}
 		}
+		
 		if (v == null)
 			v = availableVehicles.remove(0);
-		//job.getDuration() < limit
-		checkpoints.add(v.createCheckpoint(job));
-		v.runJob(job);
-		job.setStatus("ASSIGNED");
-		jobsInProgress.add(job);
+		return v;
 	}
 	
 	public int getWaitTime(Job job)
@@ -145,21 +164,6 @@ public class VCController {
 		return time;
 	}
 	
-	/*
-	public boolean nextFreeVehicle(Job job, int remainingJobTime)
-	{
-		String jobID = job.getJobID();
-		for (Checkpoint c: checkpoints)
-		{
-			if (c.getJobID().equals(jobID) &&
-			Duration.between(LocalDateTime.now(),findVehicle(c.getVehicleID()).getDepartureTime()).toMinutes()
-			> remainingJobTime) //find departure given vehicleID
-				return true;
-				
-		}
-		return false;
-	}*/
-	
 	public int nextFreeVehicleTime()
 	{
 		int time = -1;
@@ -171,7 +175,7 @@ public class VCController {
 				if (c.getJobID().equals(j.getJobID()) &&
 						Duration.between(LocalDateTime.now(),findVehicle(c.getVehicleID()).getDepartureTime()).toMinutes()
 						> remainingJobTime 
-						&& (remainingJobTime < time || time == -1)) //find departure given vehicleID
+						&& (remainingJobTime < time || time == -1))
 					time = remainingJobTime;
 			}
 		}
@@ -209,6 +213,7 @@ public class VCController {
 		else
 			return time/count;
 	}
+	
 	// ---------------------------------------------------------------------
 	// This method continues a job on a new vehicle from a saved checkpoint.
 	public void restartJob(Job job, Vehicle vehicle, Checkpoint cp) {
