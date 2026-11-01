@@ -8,7 +8,7 @@ public class Job implements Comparable<Job> {
 	private int duration;
 	private LocalDateTime deadline;
 	private String status;
-	private int progress;
+	private double progress;
 	private LocalDateTime submissionTime;
 	private LocalDateTime completionTime;
 	private Client client;
@@ -52,7 +52,7 @@ public class Job implements Comparable<Job> {
 		return status;
 	}
 
-	public int getProgress() {
+	public double getProgress() {
 		return progress;
 	}
 
@@ -75,8 +75,11 @@ public class Job implements Comparable<Job> {
 	public void setCompletionMinutes(int minutes) { completionMinutes = minutes; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	public void updateProgress(int percent) {
-		progress = percent;
+	public void updateProgress(double percent) {
+		if (percent >= 100)
+			progress = 100;
+		else
+			progress = percent;
 
 		if (progress == 100) {
 			status = "COMPLETED";

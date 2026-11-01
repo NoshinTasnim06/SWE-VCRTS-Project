@@ -150,6 +150,7 @@ public class VCController {
 		v.runJob(job);
 		job.setStatus("IN_PROGRESS");
 		jobsInProgress.add(job);
+		runningJobs.put(v,job);
 	}
 
 	// prioritize vehicle with enough available time
@@ -196,7 +197,7 @@ public class VCController {
 		}
 		job.setStatus("IN_PROGRESS");
 
-		availableVehicles.remove(vehicle);
+		vehicle.runJob(job);
 		jobQueue.remove(job);
 		runningJobs.put(vehicle, job);
 		if (!jobsInProgress.contains(job)) {
@@ -269,7 +270,7 @@ public class VCController {
 			// With redundancy, another vehicle may still be running the same
 			// job, in which case the job simply continues there
 			if (!runningJobs.containsValue(job)) {
-				Vehicle replacement = findReplacementVehicle();
+				Vehicle replacement = recruitVehicle(job);
 				if (replacement != null) {
 					restartJob(job, replacement, cp);
 				} else {
@@ -315,16 +316,24 @@ public class VCController {
 		}
 		return total / ordered.size();
 	}
-
-	// ---------------------------------------------------------------------
-	// This method returns the first vehicle in the available list that is
-	// free to take over a job, or null if there is none.
-	private Vehicle findReplacementVehicle() {
-		for (Vehicle candidate : availableVehicles) {
-			if (candidate.isAvailable()) {
-				return candidate;
+	
+	public void triggerCheckpoint(Job job)
+	{
+		LocalDateTime currTime = LocalDateTime.now();
+		double progress = job.getProgress();
+		for (Checkpoint c : checkpoints)
+		{
+			if (c.getJobID().equals(job.getJobID()))
+			{
+				progress += Math.round((Duration.between(c.getTimestamp(), currTime).toMinutes() / (job.getDuration()*1.0)) * 10000)
+						/100.0;
+				job.updateProgress(progress);
+				if (job.getProgress() == 100)
+				{
+					removeJob(job, "COMPLETED");
+					return;
+				}
 			}
 		}
-		return null;
 	}
 }
