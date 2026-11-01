@@ -138,7 +138,8 @@ public class LogWriter {
 	//-----------------------------------------------------
 	// Writes one record to a file, adding the header first if the file is empty.
 	private static void logRecord(String filename, String header, String... fields) {
-		if (new File(filename).length() == 0) {
+		File file = new File(filename);
+		if (!file.exists() || file.length() == 0) {
 			writeHeader(filename, header);
 		}
 		writeToFile(filename, String.join(", ", fields));
