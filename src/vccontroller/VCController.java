@@ -109,9 +109,8 @@ public class VCController {
 	}
 
 	public List<Job> getCompletedJobs() {
-		// Connect to server?
-		return new ArrayList<>();
-	}
+    return server.getCompletedJobs();
+}
 
 	// ---------------------------------------------------------------------
 	// This method calculates what a job costs, based on its duration and the payment rate.
