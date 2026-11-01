@@ -101,7 +101,7 @@ public class ClientPanel extends BasePanel {
 		JPanel p = new JPanel(new BorderLayout());
 
 		// Add future buttons (e.g. Payment) after newJobButton; nothing else moves
-		JButton logout = buttonForm("Logout");
+		JButton logout = new JButton("Logout");
 		JButton newJobButton = new JButton("Add Job");
 		p.add(createDashTop(clientIdLabel, logout, newJobButton), BorderLayout.NORTH);
 
@@ -125,16 +125,6 @@ public class ClientPanel extends BasePanel {
 			jobListModel.addRow(new Object[]{job.getJobID(), job.getJobName(), job.getDuration(),
 					LogWriter.formatDeadline(job.getDeadline()), job.getPriority()});
 		}
-	}
-
-	//format buttons in header
-	public JButton buttonForm(String s) {
-		JButton b = new JButton(s);
-		b.setBorderPainted(false);
-		b.setFocusPainted(false);
-		b.setContentAreaFilled(false);
-		b.setOpaque(false);
-		return b;
 	}
 
 	//structures bottom buttons of newJobUI
