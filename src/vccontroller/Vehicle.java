@@ -75,9 +75,9 @@ public class Vehicle {
 	}
 
 	public void eraseData() {
-		// How are we erasing data?
-		status = "AVAILABLE";
-	}
+    // Clear the vehicle's active-job state so it can accept another job.
+    status = "AVAILABLE";
+}
 
 	public void depart() {
 		if (status.equals("BUSY")) {
