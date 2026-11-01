@@ -16,7 +16,10 @@ public class Vehicle {
 	private LocalDateTime arrivalTime;
 	private LocalDateTime departureTime;
 	private String status;
+	private Job currentJob;
 
+	// ---------------------------------------------------------------------
+	// Creates a new vehicle.
 	public Vehicle(String vehicleID, String make, String model, int year, String licensePlate, int ramGB, int cpuCores,
 			int storageGB, int residencyTime) {
 
@@ -33,39 +36,56 @@ public class Vehicle {
 		this.status = "AVAILABLE";
 	}
 
+	// ---------------------------------------------------------------------
+	// Returns the vehicle's unique ID.
 	public String getVehicleID() {
 		return vehicleID;
 	}
 
+	// ---------------------------------------------------------------------
+	// Returns the owner of the vehicle.
 	public Owner getOwner() {
 		return owner;
 	}
 	
+	// ---------------------------------------------------------------------
+	// Returns the time when the vehicle departed.
 	public LocalDateTime getDepartureTime() {
 		return departureTime;
 	}
 
+	// ---------------------------------------------------------------------
+	// Checks whether the vehicle is currently available for a job.
 	public boolean isAvailable() {
 		return status.equals("AVAILABLE");
 	}
 
+	// ---------------------------------------------------------------------
+	// Returns the vehicle's current status.
 	public String getStatus() {
 		return status;
 	}
 
+	// ---------------------------------------------------------------------
+	// Assigns a job to the vehicle and update status accordingly.
 	public void runJob(Job job) {
 		if (!isAvailable()) {
 			throw new IllegalStateException("Vehicle is not available.");
 		}
 
 		status = "BUSY";
+		currentJob = job;
 		job.setStatus("IN_PROGRESS");
 	}
 
+	// ---------------------------------------------------------------------
+	// Creates and returns a checkpoint for the current vehicle and job. 
 	public Checkpoint createCheckpoint(Job job) {
 		return new Checkpoint(this, job);
 	}
 
+	// ---------------------------------------------------------------------
+	// Restore a vehicles state using the provided checkpoint.
 	public void restoreCheckpoint(Checkpoint checkpoint) {
 		if (checkpoint == null) {
 			throw new IllegalArgumentException("Checkpoint cannot be null.");
@@ -74,24 +94,31 @@ public class Vehicle {
 		status = "BUSY";
 	}
 
+	// ---------------------------------------------------------------------
+	// Erases the vehicles stored data and resets its status to Available. 
 	public void eraseData() {
-		// How are we erasing data?
+		currentJob = null;
 		status = "AVAILABLE";
 	}
 
+	// ---------------------------------------------------------------------
+	// Records vehicles departure time and changes its status to DEPARTED.
 	public void depart() {
 		if (status.equals("BUSY")) {
-			throw new IllegalStateException("Cannot depart while executing a job.");
+			createCheckpoint(currentJob);
 		}
 
 		eraseData();
 		status = "DEPARTED";
 		departureTime = LocalDateTime.now();
 	}
-
+	
+	// ---------------------------------------------------------------------
+	// Manually marks the vehicles as available unless it has already departed. 
 	public void markAvailable() {
 		if (!status.equals("DEPARTED")) {
 			status = "AVAILABLE";
 		}
 	}
+	
 }
