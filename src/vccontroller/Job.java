@@ -130,7 +130,10 @@ public class Job implements Comparable<Job> {
 	// Updates the job's progress and change its status.
 	// Completion time is updated for completed jobs with progress 100.
 	public void updateProgress(double percent) {
-		progress = percent;
+		if (percent >= 100)
+			progress = 100;
+		else
+			progress = percent;
 
 		if (progress == 100) {
 			status = "COMPLETED";
