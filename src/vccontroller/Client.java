@@ -29,9 +29,8 @@ public class Client extends Person {
 
 	//Adjust jobId to be clientId+jobId extension
 	public Job submitJob(String jobName, int duration, LocalDateTime deadline) {
-		String jobId = UUID.randomUUID().toString(); 											
+		String jobId = clientID + "-" + (jobList.size() + 1);
 		Job job = new Job(jobId, jobName, duration, deadline);
-
 		jobList.add(job);
 		return job;
 	}

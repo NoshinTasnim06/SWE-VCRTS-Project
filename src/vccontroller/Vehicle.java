@@ -31,10 +31,6 @@ public class Vehicle {
 		this.residencyTime = residencyTime;
 		this.arrivalTime = LocalDateTime.now();
 		this.status = "AVAILABLE";
-
-		if (year < 1900 || ramGB <= 0 || cpuCores <= 0 || storageGB <= 0 || residencyTime <= 0) {
-			throw new IllegalArgumentException("Invalid vehicle information.");
-		}
 	}
 
 	public String getVehicleID() {
@@ -43,6 +39,10 @@ public class Vehicle {
 
 	public Owner getOwner() {
 		return owner;
+	}
+	
+	public LocalDateTime getDepartureTime() {
+		return departureTime;
 	}
 
 	public boolean isAvailable() {

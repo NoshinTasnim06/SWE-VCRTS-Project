@@ -22,6 +22,7 @@ public class HomePanel extends JPanel {
     // Navigation buttons for the two main user roles.
     private JButton ownerButton;
     private JButton clientButton;
+    private JButton controllerButton;
 
     // ---------------------------------------------------------------------
     // This constructor builds and organizes the HomePanel interface and
@@ -87,9 +88,11 @@ public class HomePanel extends JPanel {
         // Create navigation buttons for vehicle owners and task clients.
         ownerButton = new JButton("I am a Vehicle Owner");
         clientButton = new JButton("I am a Task Client");
+        controllerButton = new JButton("VC Controller");
 
         ownerButton.setPreferredSize(new Dimension(190, 40));
         clientButton.setPreferredSize(new Dimension(190, 40));
+        controllerButton.setPreferredSize(new Dimension(190, 40));
 
         // Ask VCRTSFrame to display the Owner screen when clicked.
         ownerButton.addActionListener(event -> frame.showPanel("Owner"));
@@ -97,12 +100,15 @@ public class HomePanel extends JPanel {
         // Ask VCRTSFrame to display the Client screen when clicked.
         clientButton.addActionListener(event -> frame.showPanel("Client"));
 
+        controllerButton.addActionListener(event -> frame.showPanel("Controller"));
+
         // Placed both navigation buttons next to each other and center them.
         JPanel buttonPanel = new JPanel(
                 new FlowLayout(FlowLayout.CENTER, 20, 10));
 
         buttonPanel.add(ownerButton);
         buttonPanel.add(clientButton);
+        buttonPanel.add(controllerButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
     }

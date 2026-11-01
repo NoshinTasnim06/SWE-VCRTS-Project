@@ -13,11 +13,11 @@ public class Job implements Comparable<Job> {
 	private LocalDateTime completionTime;
 	private Client client;
 
-	public Job(String jobID, String jobName, int duration, LocalDateTime deadline) {
-		if (duration <= 0) {
-			throw new IllegalArgumentException("Duration must be positive.");
-		}
+	private int priority = 1;
+	private int waitingMinutes;
+	private int completionMinutes;
 
+	public Job(String jobID, String jobName, int duration, LocalDateTime deadline) {
 		this.jobID = jobID;
 		this.jobName = jobName;
 		this.duration = duration;
@@ -25,6 +25,11 @@ public class Job implements Comparable<Job> {
 		this.status = "QUEUED";
 		this.progress = 0;
 		this.submissionTime = LocalDateTime.now();
+	}
+
+	public Job(String jobID, String jobName, int duration, LocalDateTime deadline, int priority) {
+		this(jobID, jobName, duration, deadline);
+		this.priority = priority;
 	}
 
 	public String getJobID() {
@@ -63,11 +68,14 @@ public class Job implements Comparable<Job> {
 		return client;
 	}
 
-	public void updateProgress(int percent) {
-		if (percent < 0 || percent > 100) {
-			throw new IllegalArgumentException("Progress must be between 0 and 100.");
-		}
+	public int getPriority() { return priority; }
+	public int getWaitingMinutes() { return waitingMinutes; }
+	public int getCompletionMinutes() { return completionMinutes; }
+	public void setWaitingMinutes(int minutes) { waitingMinutes = minutes; }
+	public void setCompletionMinutes(int minutes) { completionMinutes = minutes; }
+	public void setPriority(int priority) { this.priority = priority; }
 
+	public void updateProgress(int percent) {
 		progress = percent;
 
 		if (progress == 100) {
@@ -89,14 +97,19 @@ public class Job implements Comparable<Job> {
 
 	@Override
 	public int compareTo(Job other) {
-		if (deadline == null && other.deadline == null) {
-			return submissionTime.compareTo(other.submissionTime);
+		if (priority != other.priority) {
+			return Integer.compare(other.priority, priority);   // higher number first
 		}
-		if (deadline == null)
+		if (deadline != null && other.deadline != null) {
+			int byDeadline = deadline.compareTo(other.deadline);
+			if (byDeadline != 0) {
+				return byDeadline;
+			}
+		} else if (deadline == null && other.deadline != null) {
 			return 1;
-		if (other.deadline == null)
+		} else if (deadline != null) {
 			return -1;
-
-		return deadline.compareTo(other.deadline);
+		}
+		return submissionTime.compareTo(other.submissionTime);
 	}
 }
