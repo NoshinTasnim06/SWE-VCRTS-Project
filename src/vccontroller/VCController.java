@@ -14,6 +14,12 @@ import java.time.*;
  * + calculateJobCost(job: Job): double
  */
 
+/**
+ * This class is the central controller of the Vehicular Cloud. It keeps the queue of
+ * waiting jobs, the pool of available vehicles and the saved checkpoints, assigns jobs
+ * to vehicles, handles vehicles leaving, and computes the priority schedule (waiting
+ * and completion time of each job) shown on the controller screen.
+ */
 public class VCController {
 	private int redundancyLevel;
 	private List<Vehicle> availableVehicles;
@@ -22,16 +28,18 @@ public class VCController {
 	private List<Job> jobsInProgress;
 	private List<Checkpoint> checkpoints;
 	private Server server;
-
 	private Map<String, Client> clients;
 	private Map<String, Owner> owners;
 	private Map<String, Vehicle> vehicles;
+	private Map<Vehicle, Job> runningJobs;
 
+	// ---------------------------------------------------------------------
+	// This constructor creates an empty controller with the given payment rate
+	// and the server that stores completed jobs.
 	public VCController(double paymentRate, Server server) {
 		this.redundancyLevel = 1;
 		this.paymentRate = paymentRate;
 		this.server = server;
-
 		availableVehicles = new ArrayList<>();
 		jobQueue = new PriorityQueue<>();
 		jobsInProgress = new ArrayList<>();
@@ -39,8 +47,11 @@ public class VCController {
 		clients = new HashMap<>();
 		owners = new HashMap<>();
 		vehicles = new HashMap<>();
+		runningJobs = new HashMap<>();
 	}
 
+	// ---------------------------------------------------------------------
+	// These methods look up a registered client, owner or vehicle by its ID.
 	public Client findClient(String clientID) {
 		return clients.get(clientID);
 	}
@@ -48,29 +59,48 @@ public class VCController {
 	public Owner findOwner(String ownerID) {
 		return owners.get(ownerID);
 	}
-	
+
 	public Vehicle findVehicle(String vehicleID) {
 		return vehicles.get(vehicleID);
 	}
 
+	// ---------------------------------------------------------------------
+	// This method adds a job to the waiting queue unless it was cancelled.
 	public void addJobToQueue(Job job) {
 		if (job != null && !job.getStatus().equals("CANCELLED")) {
 			jobQueue.offer(job);
 		}
 	}
 
+	// ---------------------------------------------------------------------
+	// This method replaces the waiting queue with the given jobs, so the queue
+	// can be rebuilt from the saved job records without adding any job twice.
+	public void setJobs(List<Job> jobs) {
+		jobQueue.clear();
+		for (Job job : jobs) {
+			addJobToQueue(job);
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// This method registers a vehicle with the controller and, if it is
+	// available, adds it to the pool of vehicles that can take jobs.
 	public void addVehicleToList(Vehicle vehicle) {
-		if (vehicle != null && vehicle.isAvailable() && !availableVehicles.contains(vehicle)) {
+		if (vehicle == null) {
+			return;
+		}
+		if (vehicle.isAvailable() && !availableVehicles.contains(vehicle)) {
 			availableVehicles.add(vehicle);
 		}
 		vehicles.put(vehicle.getVehicleID(), vehicle);
 	}
 
+	// ---------------------------------------------------------------------
+	// This method sets how many vehicles run the same job at once.
 	public void setRedundancyLevel(int level) {
 		if (level < 1) {
 			throw new IllegalArgumentException("Redundancy must be at least 1.");
 		}
-
 		redundancyLevel = level;
 	}
 
@@ -83,137 +113,63 @@ public class VCController {
 		return new ArrayList<>();
 	}
 
+	// ---------------------------------------------------------------------
+	// This method calculates what a job costs, based on its duration and the payment rate.
 	public double calculateJobCost(Job job) {
 		//Are we calculating by duration or by progress and resources?
 		return job.getDuration() * paymentRate;
 	}
 
+	// ---------------------------------------------------------------------
+	// This method assigns the job at the front of the queue to a vehicle.
 	public void nextJob() {
 		Job job = jobQueue.peek();
-
 		if (job != null) {
 			assignJob(job);
 		}
 	}
-	
-	public void assignJob(Job job)
-	{
+
+	// ---------------------------------------------------------------------
+	// This method starts a job on a recruited vehicle, or continues it from its
+	// saved checkpoint if one already exists.
+	public void assignJob(Job job) {
 		Vehicle v = recruitVehicle(job);
 		if (v == null)
 			return;
-		
-		for (Checkpoint c : checkpoints)
-		{
-			if (c.getJobID() == job.getJobID())
-			{
+
+		// If the job already has a checkpoint, continue from it instead of starting over
+		for (Checkpoint c : checkpoints) {
+			if (c.getJobID().equals(job.getJobID())) {
 				restartJob(job, v, c);
 				return;
 			}
 		}
+
+		// Otherwise save a first checkpoint and start the job
 		checkpoints.add(v.createCheckpoint(job));
 		v.runJob(job);
 		job.setStatus("IN_PROGRESS");
 		jobsInProgress.add(job);
 	}
-	
+
 	// prioritize vehicle with enough available time
-	public Vehicle recruitVehicle(Job job)
-	{
-		Vehicle v = null;
-		if (availableVehicles.size() == 0)
-			return v;
-		
-		for (int i = 0; i < availableVehicles.size(); i++)
-		{
-			Vehicle curr = availableVehicles.get(i);
-			if (job.getDuration() <= 
-					Duration.between(LocalDateTime.now(),curr.getDepartureTime()).toMinutes())
-			{
-				v = availableVehicles.remove(i);
-				break;
+	public Vehicle recruitVehicle(Job job) {
+		if (availableVehicles.isEmpty())
+			return null;
+
+		// Prefer a vehicle that is known to stay long enough to finish the job
+		for (Vehicle curr : availableVehicles) {
+			if (curr.getDepartureTime() != null
+					&& job.getDuration() <= Duration.between(LocalDateTime.now(), curr.getDepartureTime()).toMinutes()) {
+				availableVehicles.remove(curr);
+				return curr;
 			}
 		}
-		
-		if (v == null)
-			v = availableVehicles.remove(0);
-		return v;
+
+		// Otherwise take the first available vehicle
+		return availableVehicles.remove(0);
 	}
-	
-	public int getWaitTime(Job job)
-	{
-		int time = -1;
-		PriorityQueue<Job> jobs = jobQueue;
-		String jobID = job.getJobID();
-		
-		if (availableVehicles.size() == 0 && jobsInProgress.size() == 0)
-			return time;
-		if (jobs.size() <= availableVehicles.size())
-			return 0;
-		
-		time = nextFreeVehicleTime();
-		if (time == -1)
-			return time; //no available future vehicles
-		
-		while (jobs.size() != 0)
-		{
-			Job curr = jobs.poll();
-			if (curr.getJobID().equals(jobID))
-				break;	
-			time += curr.getDuration();
-		}
-		return time;
-	}
-	
-	public int nextFreeVehicleTime()
-	{
-		int time = -1;
-		for (Job j: jobsInProgress)
-		{
-			int remainingJobTime = (100 - j.getProgress()) * j.getDuration();
-			for (Checkpoint c: checkpoints)
-			{
-				if (c.getJobID().equals(j.getJobID()) &&
-						Duration.between(LocalDateTime.now(),findVehicle(c.getVehicleID()).getDepartureTime()).toMinutes()
-						> remainingJobTime 
-						&& (remainingJobTime < time || time == -1))
-					time = remainingJobTime;
-			}
-		}
-		return time;
-	}
-	
-	public int getAverageWaitTime()
-	{
-		int time = -1;
-		int count = jobQueue.size();
-		if (count >= 0 && availableVehicles.size() == 0 && jobsInProgress.size() == 0)
-		{
-			if (count == 0)
-				return 0;
-			else
-				return time;
-		}
-		if (count <= 1 && jobsInProgress.size() == 0 || (count <= availableVehicles.size()))
-			return 0;
-		
-		time = nextFreeVehicleTime();
-		if (time == -1)
-			return time; //future vehicles are unavailable
-		
-		PriorityQueue<Job> jobs = jobQueue;
-		int waitTime = time;
-		for (int j = 0; j < jobs.size() - 1; j++)
-		{
-			waitTime += jobs.peek().getDuration();
-			time += waitTime;
-		}
-		
-		if (count == 0)
-			return time; //no jobs waiting, jobs in queue
-		else
-			return time/count;
-	}
-	
+
 	// ---------------------------------------------------------------------
 	// This method continues a job on a new vehicle from a saved checkpoint.
 	public void restartJob(Job job, Vehicle vehicle, Checkpoint cp) {
@@ -257,7 +213,6 @@ public class VCController {
 		if (job == null || status == null) {
 			throw new IllegalArgumentException("Job and status are required.");
 		}
-
 		String finalStatus = status.trim().toUpperCase();
 		if (!finalStatus.equals("COMPLETED") && !finalStatus.equals("CANCELLED")
 				&& !finalStatus.equals("FAILED")) {
@@ -284,9 +239,9 @@ public class VCController {
 		// The job is finished, so its saved states are no longer needed
 		checkpoints.removeIf(cp -> cp.getJobID().equals(job.getJobID()));
 
+		// Completed jobs are stored on the server and charged to the client
 		if (finalStatus.equals("COMPLETED")) {
 			server.storeCompletedJob(job);
-
 			if (job.getClient() != null) {
 				job.getClient().addCharge(calculateJobCost(job));
 			}
@@ -315,7 +270,6 @@ public class VCController {
 			// job, in which case the job simply continues there
 			if (!runningJobs.containsValue(job)) {
 				Vehicle replacement = findReplacementVehicle();
-
 				if (replacement != null) {
 					restartJob(job, replacement, cp);
 				} else {
@@ -330,6 +284,36 @@ public class VCController {
 		// Erase the vehicle's copy of the computation, then let it leave
 		vehicle.eraseData();
 		vehicle.depart();
+	}
+
+	// Orders the queued jobs by priority and fills in each job's waiting and
+	// completion time in minutes. All jobs are assumed to arrive at time zero.
+	public List<Job> computeSchedule() {
+		List<Job> ordered = new ArrayList<>(jobQueue);
+		Collections.sort(ordered);
+
+		// Each job waits for the total duration of every job scheduled before it
+		int clock = 0;
+		for (Job job : ordered) {
+			job.setWaitingMinutes(clock);
+			clock += job.getDuration();
+			job.setCompletionMinutes(clock);
+		}
+		return ordered;
+	}
+
+	// Average of the waiting times from computeSchedule()
+	public double getAverageWaitingMinutes() {
+		List<Job> ordered = computeSchedule();
+		if (ordered.isEmpty()) {
+			return 0;
+		}
+
+		double total = 0;
+		for (Job job : ordered) {
+			total += job.getWaitingMinutes();
+		}
+		return total / ordered.size();
 	}
 
 	// ---------------------------------------------------------------------
