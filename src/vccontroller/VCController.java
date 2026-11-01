@@ -317,6 +317,7 @@ public class VCController {
 		return total / ordered.size();
 	}
 	
+	//adds progress to job based on time elapsed from checkpoint
 	public void triggerCheckpoint(Job job)
 	{
 		LocalDateTime currTime = LocalDateTime.now();
