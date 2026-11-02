@@ -325,9 +325,10 @@ public class VCController {
 		{
 			if (c.getJobID().equals(job.getJobID()))
 			{
-				progress += Math.round((Duration.between(c.getTimestamp(), currTime).toMinutes() / (job.getDuration()*1.0)) * 10000)
+				progress += Math.round((Duration.between(c.getLatestUpdate(), currTime).toMinutes() / (job.getDuration()*1.0)) * 10000)
 						/100.0;
 				job.updateProgress(progress);
+				c.setLatestUpdate(currTime);
 				if (job.getProgress() == 100)
 				{
 					removeJob(job, "COMPLETED");

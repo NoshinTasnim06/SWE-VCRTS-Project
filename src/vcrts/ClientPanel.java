@@ -29,6 +29,7 @@ public class ClientPanel extends BasePanel {
 	private JComboBox<Integer> importanceBox;
 	private JLabel clientIdLabel = new JLabel("Client:");
 	private Client client;
+	private JTable jobTable;
 
 	// ---------------------------------------------------------------------
 	// This constructor creates the login, dashboard and job form panels and
@@ -103,13 +104,18 @@ public class ClientPanel extends BasePanel {
 		// Add future buttons (e.g. Payment) after newJobButton; nothing else moves
 		JButton logout = new JButton("Logout");
 		JButton newJobButton = new JButton("Add Job");
-		p.add(createDashTop(clientIdLabel, logout, newJobButton), BorderLayout.NORTH);
+		JButton cancelJobButton = new JButton("Cancel Job");
+		p.add(createDashTop(clientIdLabel, logout, newJobButton, cancelJobButton), BorderLayout.NORTH);
 
 		jobListModel = createTableModel(
-				new String[]{"Job ID", "Job Name", "Duration (min)", "Deadline", "Importance"}, -1);
-		p.add(new JScrollPane(new JTable(jobListModel)), BorderLayout.CENTER);
+				new String[]{"Job ID", "Job Name", "Duration (min)", "Deadline", "Importance", "Status"}, -1);
+		
+		jobTable = new JTable(jobListModel);
+		p.add(new JScrollPane(jobTable), BorderLayout.CENTER);
 
 		newJobButton.addActionListener(e -> cardLayout.show(mainContainer, "newJobUI"));
+		cancelJobButton.addActionListener(e -> cancelJob());
+		
 		logout.addActionListener(e -> {
 			userId = null;
 			cardLayout.show(mainContainer, "loginUI");
@@ -123,7 +129,7 @@ public class ClientPanel extends BasePanel {
 		jobListModel.setRowCount(0);
 		for (Job job : client.getJobs()) {
 			jobListModel.addRow(new Object[]{job.getJobID(), job.getJobName(), job.getDuration(),
-					LogWriter.formatDeadline(job.getDeadline()), job.getPriority()});
+					LogWriter.formatDeadline(job.getDeadline()), job.getPriority(), job.getStatus()});
 		}
 	}
 
@@ -212,6 +218,33 @@ public class ClientPanel extends BasePanel {
 		client = new Client(userId, saved[2], saved[3]);
 		for (String[] record : LogWriter.getJobsFor(userId)) {
 			client.getJobs().add(LogWriter.toJob(record));
+		}
+	}
+	
+	// Updates display for a canceled job
+	private void cancelJob() {
+		int row = jobTable.getSelectedRow();
+		if (row < 0) {
+			JOptionPane.showMessageDialog(this, "Select a job in the list first.");
+			return;
+		}
+
+		String jobID = jobListModel.getValueAt(row, 0).toString();
+
+		int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to cancel this job?",
+				"Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+
+		if (confirm == JOptionPane.YES_OPTION) {
+			for (Job job : client.getJobs()) {
+				if (job.getJobID().equals(jobID)) {
+
+					job.setStatus("CANCELLED");
+					refreshJobList();
+
+					JOptionPane.showMessageDialog(this, "Job cancelled sucessfully!");
+					return;
+				}
+			}
 		}
 	}
 }
