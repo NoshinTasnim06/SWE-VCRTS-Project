@@ -1,6 +1,9 @@
 package vcrts;
 
 import vccontroller.Job;
+import vccontroller.Client;
+import java.util.HashMap;
+import java.util.Map;
 import vccontroller.VCController;
 
 import javax.swing.*;
@@ -62,8 +65,8 @@ public class ControllerPanel extends BasePanel {
             public void componentShown(ComponentEvent e) {
                 setContentVisible(false);
                 if (askPassword()) {
-                    showJobs();
                     setContentVisible(true);
+                    showJobs();
                 } else {
                     frame.showPanel("Home");
                 }

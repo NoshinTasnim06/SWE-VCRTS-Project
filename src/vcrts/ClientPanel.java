@@ -217,7 +217,7 @@ public class ClientPanel extends BasePanel {
 		String[] saved = LogWriter.findUser("Client", userId);   // timestamp, id, first, last
 		client = new Client(userId, saved[2], saved[3]);
 		for (String[] record : LogWriter.getJobsFor(userId)) {
-			client.getJobs().add(LogWriter.toJob(record));
+		    LogWriter.addSavedJob(client, record);
 		}
 	}
 	

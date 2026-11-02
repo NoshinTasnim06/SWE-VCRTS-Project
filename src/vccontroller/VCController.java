@@ -62,8 +62,10 @@ public class VCController {
 	// This method adds a job to the waiting queue unless it was cancelled.
 	public void addJobToQueue(Job job) {
 		if (job != null && !job.getStatus().equals("CANCELLED")) {
-			jobQueue.offer(job);
-			clients.put(job.getClient().getClientID(), job.getClient());
+		    jobQueue.offer(job);
+		    if (job.getClient() != null) {
+		        clients.put(job.getClient().getClientID(), job.getClient());
+		    }
 		}
 	}
 
