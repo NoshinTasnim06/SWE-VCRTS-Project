@@ -186,7 +186,7 @@ public class VCController {
 			throw new IllegalStateException("Vehicle is not available.");
 		}
 
-		// Give the new vehicle the saved state (this marks the vehicle as busy)
+		// Start the job on the new vehicle, then give it the saved state
 		vehicle.runJob(job);
 		cp.copyTo(vehicle);
 
