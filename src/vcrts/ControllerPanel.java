@@ -22,6 +22,7 @@ public class ControllerPanel extends BasePanel {
     private VCController controller;
     private DefaultTableModel tableModel;
     private JLabel averageLabel = new JLabel("Average waiting time: -");
+    private static final String CONTROLLER_PASSWORD = "vcadmin";
 
     // ---------------------------------------------------------------------
     // This constructor builds the controller screen, wires its buttons, and makes
@@ -55,11 +56,17 @@ public class ControllerPanel extends BasePanel {
         calculateButton.addActionListener(e -> showSchedule());
         backButton.addActionListener(e -> frame.showPanel("Home"));
 
-        // Show the latest saved jobs whenever this screen is brought to the front
+        // Hide the screen and ask for the password every time it is shown; go back Home if it is wrong
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
-                showJobs();
+                setContentVisible(false);
+                if (askPassword()) {
+                    showJobs();
+                    setContentVisible(true);
+                } else {
+                    frame.showPanel("Home");
+                }
             }
         });
     }
@@ -97,5 +104,22 @@ public class ControllerPanel extends BasePanel {
         }
         averageLabel.setText(String.format("Average waiting time: %.2f minutes",
                 controller.getAverageWaitingMinutes()));
+    }
+
+    // Asks for the controller password in a small dialog and returns whether it was correct
+    // Shows or hides everything on this screen (title, buttons, table and average label)
+    private void setContentVisible(boolean visible) {
+        for (Component component : getComponents()) {
+            component.setVisible(visible);
+        }
+    }
+
+    // Asks for the controller password in a small dialog and returns whether it was correct
+    private boolean askPassword() {
+        JPasswordField field = new JPasswordField(15);
+        int choice = JOptionPane.showConfirmDialog(this, field, "Enter the VC Controller password",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        return choice == JOptionPane.OK_OPTION
+                && new String(field.getPassword()).equals(CONTROLLER_PASSWORD);
     }
 }
