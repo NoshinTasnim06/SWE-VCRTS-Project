@@ -111,8 +111,8 @@ public class LogWriter {
 	public static synchronized String logJob(String clientId, String jobName, String duration,
 	                                         String deadline, String importance) {
 		String jobId = clientId + "-" + (countRecords(JOBS_FILE, clientId) + 1);
-		logRecord(JOBS_FILE, "Job ID, Client ID, Job Name, Duration, Deadline, Importance",
-				jobId, clientId, jobName, duration, deadline, importance);
+		logRecord(JOBS_FILE, "Job ID, Client ID, Job Name, Duration, Deadline, Importance, Status",
+				jobId, clientId, jobName, duration, deadline, importance, "QUEUED");
 		return jobId;
 	}
 
