@@ -22,4 +22,15 @@ The objective is to provide a system that:
 * User information is stored in text files with timestamps.
 * The system supports multiple users and entries.
 
+### Milestone 3: UML
+* Design Class: Completed.
+* Identified necessary classes, associations, multiplicities, attributes, and methods.
+* Designed relationhisp between vehicles, owners, clients, jobs, and the VC controller
+* Incorporated specific characteristics such as job status, redundancy, checkpoint management into the system desgin.
 
+### Milestone 4: Class Implementation
+* Class Implementation: Completed.
+* Implemented Java source files for each class defined in the UML Design Class.
+* Integrated the Java classes with the existing Vehicular Cloud Console GUI.
+* Added a priority field to support priority-based scheduling.
+* Calculated Average Waiting Time and Completion Time.
