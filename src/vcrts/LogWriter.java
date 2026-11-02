@@ -9,6 +9,7 @@
 package vcrts;
 
 import vccontroller.Job;
+import vccontroller.Client;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -115,16 +116,21 @@ public class LogWriter {
 				jobId, clientId, jobName, duration, deadline, importance, "QUEUED");
 		return jobId;
 	}
-
+	
 	//-----------------------------------------------------
 	// Builds a Job object from one saved job record (ID, name, duration, deadline and priority).
 	public static Job toJob(String[] record) {
-		Job job = new Job(record[1], record[3], Integer.parseInt(record[4]),
-				parseDeadline(record[5]), Integer.parseInt(record[6]));
-		if (record.length > 7) {
-			job.setStatus(record[7]); // rows saved before the Status column was added stay QUEUED
-		}
-		return job;
+	    return new Job(record[1], record[3], Integer.parseInt(record[4]),
+	            parseDeadline(record[5]), Integer.parseInt(record[6]));
+	}
+
+	//-----------------------------------------------------
+	// Adds one saved job record (name, duration, deadline and priority) to the given client
+	// by submitting it through the Client class, so the job knows which client it belongs to.
+	public static Job addSavedJob(Client client, String[] record) {
+	    Job job = client.submitJob(record[3], Integer.parseInt(record[4]), parseDeadline(record[5]));
+	    job.setPriority(Integer.parseInt(record[6]));
+	    return job;
 	}
 
 	//-----------------------------------------------------
