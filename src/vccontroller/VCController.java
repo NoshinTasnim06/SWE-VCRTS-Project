@@ -3,17 +3,6 @@ package vccontroller;
 import java.util.*;
 import java.time.*;
 
-/* Need to implement Or correct
- * + assignJob(job: Job): void
- * + triggerCheckpoint(job: Job): void
- * + recruitVehicle(job: Job): Vehicle
- * + restartJob(job: Job, vehicle: Vehicle, cp: Checkpoint): void
- * + removeJob(job: Job, status: String): void
- * + handleDeparture(vehicle: Vehicle): void
- * + getCompletedJobs(): List<Job>
- * + calculateJobCost(job: Job): double
- */
-
 /**
  * This class is the central controller of the Vehicular Cloud. It keeps the queue of
  * waiting jobs, the pool of available vehicles and the saved checkpoints, assigns jobs
