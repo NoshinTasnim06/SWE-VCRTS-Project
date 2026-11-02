@@ -1,269 +1,252 @@
 /* Project:  VCRTS
+
  * Class:    OwnerPanel.java
  * Author:   Saffah Azeem
  * Date:     September 29, 2026
  * This program provides the form vehicle owners use to register their vehicle
  * and offer its idle computing power, checking every field before saving it.
-*/
+ */
 
 package vcrts;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.*;
 import java.time.Year;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.event.TableModelEvent;
 
-public class OwnerPanel extends JPanel {
+/**
+ * This class provides the vehicle owner interface of the VCRTS application. It lets
+ * an owner sign in, view their registered vehicles, register a new vehicle, change a
+ * vehicle's availability, and update a vehicle's residency time. All entries are
+ * saved through the LogWriter utility.
+ */
+public class OwnerPanel extends BasePanel {
 
-	private static final Color ERROR_COLOR = new Color(200, 30, 30);
-	private static final Border ERROR_BORDER = BorderFactory.createLineBorder(ERROR_COLOR, 2);
-	private static final int FIELD_WIDTH = 20;
-	private static final int MIN_VEHICLE_YEAR = 1900;
+    private static final int MIN_VEHICLE_YEAR = 1900;
 
-	private VCRTSFrame frame;
-	private JTextField ownerIdField;
-	private JTextField ownerFNameField;
-	private JTextField ownerLNameField;
-	private JTextField vehicleMakeField;
-	private JTextField vehicleBrandField;
-	private JTextField vehicleYearField;
-	private JTextField vehicleLicenseField;
-	private JTextField residencyTimeField;
-	private JButton submitButton;
-	private JButton backButton;
+    // Position of each form field inside the fields and errors arrays (same order as the form)
+    private static final int MAKE = 0, MODEL = 1, YEAR = 2, LICENSE = 3,
+            RESIDENCY = 4, RAM = 5, CPU = 6, STORAGE = 7;
 
-	// Inline error labels, one under each field, hidden until a check fails
-	private JLabel ownerIdError;
-	private JLabel ownerFNameError;
-	private JLabel ownerLNameError;
-	private JLabel vehicleMakeError;
-	private JLabel vehicleBrandError;
-	private JLabel vehicleYearError;
-	private JLabel vehicleLicenseError;
-	private JLabel residencyTimeError;
+    private static final String[] LABELS = {"Vehicle Make:", "Vehicle Model:", "Vehicle Year:",
+            "License Plate:", "Residency Time (hours):", "RAM (GB):", "CPU Cores:", "Storage (GB):"};
 
-	private Border defaultBorder;
-	private int nextRow = 0;
+    private static final String[] ERRORS = {"Vehicle make is required (no commas)",
+            "Vehicle model is required (no commas)", "Must enter a valid 4-digit year",
+            "License plate is required (no commas)", "Must be a whole number greater than 0",
+            "Must be a whole number greater than 0", "Must be a whole number greater than 0",
+            "Must be a whole number greater than 0"};
 
-	// ---------------------------------------------------------------------
-	// This constructor creates the fields and buttons, connects the button
-	// actions, and arranges everything on the panel.
-	public OwnerPanel(VCRTSFrame frame) {
-		this.frame = frame;
+    private final JTextField[] fields = new JTextField[LABELS.length];
+    private final JLabel[] errors = new JLabel[LABELS.length];
 
-		ownerIdField = new JTextField(FIELD_WIDTH);
-		ownerFNameField = new JTextField(FIELD_WIDTH);
-		ownerLNameField = new JTextField(FIELD_WIDTH);
-		vehicleMakeField = new JTextField(FIELD_WIDTH);
-		vehicleBrandField = new JTextField(FIELD_WIDTH);
-		vehicleYearField = new JTextField(FIELD_WIDTH);
-		vehicleLicenseField = new JTextField(FIELD_WIDTH);
-		residencyTimeField = new JTextField(FIELD_WIDTH);
-		defaultBorder = ownerIdField.getBorder();
+    private CardLayout cardLayout;
+    private JPanel mainContainer;
 
-		ownerIdError = createErrorLabel("Owner ID is required");
-		ownerFNameError = createErrorLabel("First name is required");
-		ownerLNameError = createErrorLabel("Last name is required");
-		vehicleMakeError = createErrorLabel("Vehicle make is required");
-		vehicleBrandError = createErrorLabel("Vehicle brand is required");
-		vehicleYearError = createErrorLabel("Must enter a valid 4-digit year");
-		vehicleLicenseError = createErrorLabel("License plate is required");
-		residencyTimeError = createErrorLabel("Must enter a valid duration greater than 0");
+    private JLabel ownerIdLabel = new JLabel("Owner:");
+    private DefaultTableModel vehicleModel;
+    private JTable vehicleTable;
 
-		submitButton = new JButton("Submit");
-		backButton = new JButton("Back");
+    // ---------------------------------------------------------------------
+    // This constructor initializes the vehicle owner panel by constructing
+    // the input form with error labels, configuring navigation buttons,
+    // establishing the card layout container for switching between login,
+    // dashboard and registration views, and showing the initial login card.
+    public OwnerPanel(VCRTSFrame frame) {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(BorderFactory.createTitledBorder("Register Your Vehicle"));
 
-		submitButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				handleSubmit();
-			}
-		});
+        // Create each input field with its error label and add them to the form as rows
+        nextRow = 0;
+        for (int i = 0; i < LABELS.length; i++) {
+            fields[i] = new JTextField(FIELD_WIDTH);
+            errors[i] = createErrorLabel(ERRORS[i]);
+            addFieldRow(form, LABELS[i], fields[i], errors[i]);
+        }
 
-		backButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				clearFields();
-				frame.showPanel("HOME"); // TODO: match VCRTSFrame's method for the home screen
-			}
-		});
+        // Reset input fields and transition back to the dashboard when the back button is clicked
+        JButton submitButton = new JButton("Submit");
+        JButton backButton = new JButton("Back");
+        submitButton.addActionListener(event -> handleSubmit());
+        backButton.addActionListener(event -> {
+            clearFields();
+            cardLayout.show(mainContainer, "dash");
+        });
 
-		setLayout(new GridBagLayout());
-		setBorder(BorderFactory.createTitledBorder("Register Your Vehicle"));
+        // Group action buttons together in a horizontal flow layout and align them on the
+        // grid underneath the input fields
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(submitButton);
+        buttonPanel.add(backButton);
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 1;
+        constraints.gridy = nextRow;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(8, 8, 4, 8);
+        form.add(buttonPanel, constraints);
 
-		addFieldRow("Owner ID:", ownerIdField, ownerIdError);
-		addFieldRow("First Name:", ownerFNameField, ownerFNameError);
-		addFieldRow("Last Name:", ownerLNameField, ownerLNameError);
-		addFieldRow("Vehicle Make:", vehicleMakeField, vehicleMakeError);
-		addFieldRow("Vehicle Brand:", vehicleBrandField, vehicleBrandError);
-		addFieldRow("Vehicle Year:", vehicleYearField, vehicleYearError);
-		addFieldRow("License Plate:", vehicleLicenseField, vehicleLicenseError);
-		addFieldRow("Residency Time (hours):", residencyTimeField, residencyTimeError);
+        // Assemble the card layout container to handle transitions between the owner login
+        // panel, the dashboard and the registration form
+        cardLayout = new CardLayout();
+        mainContainer = new JPanel(cardLayout);
+        mainContainer.add(createLoginPanel("Owner",
+                        () -> {
+                            ownerIdLabel.setText("Owner: " + userId);
+                            refreshVehicles();
+                            cardLayout.show(mainContainer, "dash");
+                        },
+                        () -> frame.showPanel("Home")),
+                "login");
+        mainContainer.add(form, "form");
+        mainContainer.add(ownerDash(), "dash");
 
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-		buttonPanel.add(submitButton);
-		buttonPanel.add(backButton);
+        setLayout(new BorderLayout());
+        add(mainContainer);
+        cardLayout.show(mainContainer, "login");
+    }
 
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.gridx = 1;
-		constraints.gridy = nextRow;
-		constraints.anchor = GridBagConstraints.WEST;
-		constraints.insets = new Insets(8, 8, 4, 8);
-		add(buttonPanel, constraints);
-	}
+    // -------------------------------------------------------------------------------
+    // This method returns the trimmed text of one form field.
+    private String text(int field) {
+        return fields[field].getText().trim();
+    }
 
-	// ---------------------------------------------------------------------
-	// This method adds one row holding a label and its text field, with the
-	// field's hidden error label placed on the row below.
-	private void addFieldRow(String labelText, JTextField field, JLabel errorLabel) {
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.anchor = GridBagConstraints.WEST;
-		constraints.insets = new Insets(4, 8, 0, 8);
+    // -------------------------------------------------------------------------------
+    // This method evaluates all form fields against validation criteria, updating
+    // visual error states on each field and returning whether every field passed inspection.
+    private boolean validateFields() {
+        boolean[] passed = new boolean[fields.length];
+        passed[MAKE] = isValidText(fields[MAKE]);
+        passed[MODEL] = isValidText(fields[MODEL]);
+        passed[YEAR] = isValidYear(text(YEAR));
+        passed[LICENSE] = isValidText(fields[LICENSE]);
+        passed[RESIDENCY] = isPositiveInteger(text(RESIDENCY));
+        passed[RAM] = isPositiveInteger(text(RAM));
+        passed[CPU] = isPositiveInteger(text(CPU));
+        passed[STORAGE] = isPositiveInteger(text(STORAGE));
 
-		constraints.gridx = 0;
-		constraints.gridy = nextRow;
-		add(new JLabel(labelText), constraints);
+        // Show or clear the error state of every field, without stopping at the first failure
+        boolean allValid = true;
+        for (int i = 0; i < fields.length; i++) {
+            allValid &= checkField(fields[i], errors[i], passed[i]);
+        }
+        return allValid;
+    }
 
-		constraints.gridx = 1;
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		add(field, constraints);
+    // ---------------------------------------------------------------------
+    // This method verifies that an entered year string parses into an integer
+    // within an acceptable historical and near-future year range.
+    private boolean isValidYear(String text) {
+        try {
+            int year = Integer.parseInt(text.trim());
+            return year >= MIN_VEHICLE_YEAR && year <= Year.now().getValue() + 1;
+        } catch (NumberFormatException exception) {
+            return false;
+        }
+    }
 
-		constraints.gridy = nextRow + 1;
-		constraints.fill = GridBagConstraints.NONE;
-		constraints.weightx = 0;
-		constraints.insets = new Insets(0, 8, 4, 8);
-		add(errorLabel, constraints);
+    // ---------------------------------------------------------------------
+    // This method processes form submission by validating inputs, saving the
+    // vehicle data via the LogWriter utility, displaying a confirmation alert,
+    // and resetting form fields.
+    private void handleSubmit() {
+        if (!validateFields()) {
+            return;
+        }
 
-		nextRow += 2;
-	}
+        // Log vehicle details to persistent storage under the current user ID
+        String vehicleId = LogWriter.logVehicle(userId, text(MAKE), text(MODEL), text(YEAR),
+                text(LICENSE), text(RAM), text(CPU), text(STORAGE), text(RESIDENCY));
 
-	// ---------------------------------------------------------------------
-	// This method creates a small red error label that starts out hidden.
-	private JLabel createErrorLabel(String message) {
-		JLabel errorLabel = new JLabel(message);
-		errorLabel.setForeground(ERROR_COLOR);
-		errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
-		errorLabel.setVisible(false);
-		return errorLabel;
-	}
+        JOptionPane.showMessageDialog(this,
+                "Vehicle " + vehicleId + " registered successfully!",
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+        clearFields();
+        refreshVehicles();
+        cardLayout.show(mainContainer, "dash");
+    }
 
-	// ---------------------------------------------------------------------
-	// This method checks that every field is filled in and that the year and
-	// residency time hold valid numbers. It returns true if all checks pass.
-	private boolean validateFields() {
+    // ---------------------------------------------------------------------
+    // This method clears all text entries across input fields, restores default
+    // component borders, and hides active error messages.
+    private void clearFields() {
+        for (int i = 0; i < fields.length; i++) {
+            fields[i].setText("");
+            checkField(fields[i], errors[i], true);
+        }
+    }
 
-		/* Every check runs, instead of stopping at the first failure, so the
-		 * user sees all of the problems on the form at the same time.
-		 */
-		boolean allValid = true;
-		allValid &= checkField(ownerIdField, ownerIdError, !isBlank(ownerIdField));
-		allValid &= checkField(ownerFNameField, ownerFNameError, !isBlank(ownerFNameField));
-		allValid &= checkField(ownerLNameField, ownerLNameError, !isBlank(ownerLNameField));
-		allValid &= checkField(vehicleMakeField, vehicleMakeError, !isBlank(vehicleMakeField));
-		allValid &= checkField(vehicleBrandField, vehicleBrandError, !isBlank(vehicleBrandField));
-		allValid &= checkField(vehicleYearField, vehicleYearError,
-				isValidYear(vehicleYearField.getText()));
-		allValid &= checkField(vehicleLicenseField, vehicleLicenseError, !isBlank(vehicleLicenseField));
-		allValid &= checkField(residencyTimeField, residencyTimeError,
-				isPositiveNumber(residencyTimeField.getText()));
-		return allValid;
-	}
+    // The owner's home screen: header, buttons, and the list of their vehicles
+    private JPanel ownerDash() {
+        JPanel p = new JPanel(new BorderLayout());
 
-	// ---------------------------------------------------------------------
-	// This method shows or hides one field's red border and error label, and
-	// returns whether the field passed its check.
-	private boolean checkField(JTextField field, JLabel errorLabel, boolean passed) {
-		field.setBorder(passed ? defaultBorder : ERROR_BORDER);
-		errorLabel.setVisible(!passed);
-		revalidate();
-		repaint();
-		return passed;
-	}
+        JButton logout = new JButton("Logout");
+        JButton addVehicleButton = new JButton("Register Vehicle");
+        JButton residencyButton = new JButton("Update Residency");
+        p.add(createDashTop(ownerIdLabel, logout, addVehicleButton, residencyButton), BorderLayout.NORTH);
 
-	// ---------------------------------------------------------------------
-	// This method returns true if a text field is empty or only has spaces.
-	private boolean isBlank(JTextField field) {
-		return field.getText().trim().isEmpty();
-	}
+        // Only the Status column (column 9) can be edited
+        vehicleModel = createTableModel(
+                new String[]{"Vehicle ID", "Make", "Model", "Year", "License Plate",
+                        "RAM (GB)", "CPU Cores", "Storage (GB)", "Residency (hrs)", "Status"}, 9);
+        vehicleTable = new JTable(vehicleModel);
 
-	// ---------------------------------------------------------------------
-	// This method returns true if the text is a whole-number year between
-	// 1900 and next year (so new models can be registered).
-	private boolean isValidYear(String text) {
-		try {
-			int year = Integer.parseInt(text.trim());
-			return year >= MIN_VEHICLE_YEAR && year <= Year.now().getValue() + 1;
-		} catch (NumberFormatException exception) {
-			return false;
-		}
-	}
+        // Status column is a dropdown
+        JComboBox<String> statusBox = new JComboBox<>(new String[]{"Available", "Unavailable"});
+        vehicleTable.getColumnModel().getColumn(9).setCellEditor(new DefaultCellEditor(statusBox));
 
-	// ---------------------------------------------------------------------
-	// This method returns true if the text is a real number greater than 0.
-	private boolean isPositiveNumber(String text) {
-		try {
-			double hours = Double.parseDouble(text.trim());
-			return hours > 0 && !Double.isInfinite(hours) && !Double.isNaN(hours);
-		} catch (NumberFormatException exception) {
-			return false;
-		}
-	}
+        // When the owner picks a new status, save it to vehicles.txt
+        vehicleModel.addTableModelListener(e -> {
+            if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 9 && e.getFirstRow() >= 0) {
+                String vehicleId = vehicleModel.getValueAt(e.getFirstRow(), 0).toString();
+                String status = vehicleModel.getValueAt(e.getFirstRow(), 9).toString();
+                LogWriter.updateVehicle(vehicleId, null, status);
+            }
+        });
+        p.add(new JScrollPane(vehicleTable), BorderLayout.CENTER);
 
-	// ---------------------------------------------------------------------
-	// This method saves the owner and vehicle through LogWriter when every
-	// field is valid, shows a confirmation popup, and clears the form.
-	private void handleSubmit() {
-		if (!validateFields()) {
-			return; // red errors stay visible until the user fixes them
-		}
+        // Wire the dashboard buttons to their screens and actions
+        addVehicleButton.addActionListener(e -> cardLayout.show(mainContainer, "form"));
+        residencyButton.addActionListener(e -> updateResidency());
+        logout.addActionListener(e -> {
+            userId = null;
+            cardLayout.show(mainContainer, "login");
+        });
 
-		String ownerId = ownerIdField.getText().trim();
-		String firstName = ownerFNameField.getText().trim();
-		String lastName = ownerLNameField.getText().trim();
-		String make = vehicleMakeField.getText().trim();
-		String brand = vehicleBrandField.getText().trim();
-		String year = vehicleYearField.getText().trim();
-		String license = vehicleLicenseField.getText().trim();
-		String residencyTime = residencyTimeField.getText().trim();
+        return p;
+    }
 
-		try {
-			// TODO: match the final LogWriter method signatures
-			LogWriter.logOwner(ownerId, firstName, lastName);
-			LogWriter.logVehicle(ownerId, make, brand, year, license, residencyTime);
-		} catch (Exception exception) {
-			JOptionPane.showMessageDialog(this,
-					"Could not save registration: " + exception.getMessage(),
-					"Error", JOptionPane.ERROR_MESSAGE);
-			return;
-		}
+    // Reloads the list with this owner's saved vehicles
+    private void refreshVehicles() {
+        vehicleModel.setRowCount(0);
+        for (String[] v : LogWriter.getVehiclesFor(userId)) {
+            vehicleModel.addRow(new Object[]{v[1], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11]});
+        }
+    }
 
-		JOptionPane.showMessageDialog(this,
-				"Vehicle registered successfully!",
-				"Success", JOptionPane.INFORMATION_MESSAGE);
-		clearFields();
-	}
+    // Changes only the residency time of the selected vehicle
+    private void updateResidency() {
+        int row = vehicleTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Select a vehicle in the list first.");
+            return;
+        }
 
-	// ---------------------------------------------------------------------
-	// This method empties every text field and removes all error markings.
-	private void clearFields() {
-		JTextField[] fields = { ownerIdField, ownerFNameField, ownerLNameField, vehicleMakeField,
-				vehicleBrandField, vehicleYearField, vehicleLicenseField, residencyTimeField };
-		JLabel[] errorLabels = { ownerIdError, ownerFNameError, ownerLNameError, vehicleMakeError,
-				vehicleBrandError, vehicleYearError, vehicleLicenseError, residencyTimeError };
+        // Ask for the new residency time and make sure it is a valid number
+        String vehicleId = vehicleModel.getValueAt(row, 0).toString();
+        String input = JOptionPane.showInputDialog(this, "New residency time (hours):");
+        if (input == null) {
+            return; // the owner cancelled
+        }
+        if (!isPositiveInteger(input)) {
+            JOptionPane.showMessageDialog(this, "Enter a whole number greater than 0.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-		for (JTextField field : fields) {
-			field.setText("");
-			field.setBorder(defaultBorder);
-		}
-
-		for (JLabel errorLabel : errorLabels) {
-			errorLabel.setVisible(false);
-		}
-
-		revalidate();
-		repaint();
-	}
-
+        // Save the new residency time and reload the list
+        LogWriter.updateVehicle(vehicleId, input.trim(), null);
+        refreshVehicles();
+    }
 }

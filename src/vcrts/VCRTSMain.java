@@ -2,19 +2,19 @@ package vcrts;
 
 import javax.swing.*;
 
+/*
+ * This class serves as the main entry point for the Vehicular Cloud Resource Trading System 
+ * (VCRTS) application, responsible for starting up the program and launching the primary
+ * user interface.
+ */
 public class VCRTSMain {
 
-    /* METHOD: main(String[] args)
-     * Make public static void.
-     * Launch application on the Event Dispatch Thread using SwingUtilities.invokeLater().
-     * Inside run(), instantiate VCRTSFrame and set setVisible(true).
-     */
+    // ---------------------------------------------------------------------
+    // This method launches the application by scheduling the instantiation of 
+	// the main VCRTSFrame on the Swing Event Dispatch Thread to ensure thread-safe user 
+	// interface initialization.
 	
-	public static void main(String[] args) {
-		VCRTSFrame frame = new VCRTSFrame();
-		frame.setVisible(true);
-		ClientPanel p = new ClientPanel(frame); //client testing
-		
-	}
-
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(VCRTSFrame::new);
+    }
 }
