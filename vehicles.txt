@@ -1,1 +1,2 @@
-
+Timestamp, Vehicle ID, Owner ID, Make, Model, Year, License, RAM GB, CPU Cores, Storage GB, Residency Time, Status
+2026-11-01 20:22:30, RonaldWeasley-1, RonaldWeasley, Ford, Anglia, 1985, 7990TD, 8, 500, 5, 16, Available

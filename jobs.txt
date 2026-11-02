@@ -1,0 +1,11 @@
+Timestamp, Job ID, Client ID, Job Name, Duration, Deadline, Importance
+2026-11-01 20:23:22, HermioneGranger-1, HermioneGranger, Gryffindor, 20, 2026-11-02 01:23:22, 1
+2026-11-01 20:23:56, HermioneGranger-2, HermioneGranger, Phoenix, 30, 2026-11-01 22:23:56, 4
+2026-11-01 20:24:15, HermioneGranger-3, HermioneGranger, Philospohers Stone, 60, 2026-11-02 04:24:15, 3
+2026-11-01 20:25:11, HermioneGranger-4, HermioneGranger, TimeTurner, 40, 2026-11-02 05:25:11, 4
+2026-11-01 20:25:34, HermioneGranger-5, HermioneGranger, Dobby, 5, 2026-11-01 21:25:34, 2
+2026-11-01 20:25:56, HermioneGranger-6, HermioneGranger, Dragon, 70, 2026-11-01 23:25:56, 5
+2026-11-01 20:26:09, HermioneGranger-7, HermioneGranger, Wand, 60, 2026-11-05 04:26:09, 3
+2026-11-01 20:26:27, HermioneGranger-8, HermioneGranger, Owl, 50, 2026-11-01 23:26:27, 1
+2026-11-01 20:27:29, HermioneGranger-9, HermioneGranger, Ravenclaw, 58, 2026-11-02 02:27:29, 4
+2026-11-01 20:28:02, HermioneGranger-10, HermioneGranger, Hufflepuff, 200, 2026-11-02 04:28:02, 3
