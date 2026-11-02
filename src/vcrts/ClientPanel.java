@@ -237,8 +237,13 @@ public class ClientPanel extends BasePanel {
 		if (confirm == JOptionPane.YES_OPTION) {
 			for (Job job : client.getJobs()) {
 				if (job.getJobID().equals(jobID)) {
+					if (job.getStatus().equals("COMPLETED") || job.getStatus().equals("CANCELLED")) {
+						JOptionPane.showMessageDialog(this, "This job is already finished or cancelled.");
+						return;
+					}
 
 					job.setStatus("CANCELLED");
+					LogWriter.updateJobStatus(jobID, "CANCELLED"); // save it so it stays cancelled
 					refreshJobList();
 
 					JOptionPane.showMessageDialog(this, "Job cancelled sucessfully!");
