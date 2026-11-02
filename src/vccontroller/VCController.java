@@ -181,7 +181,8 @@ public class VCController {
 			throw new IllegalStateException("Vehicle is not available.");
 		}
 
-		// Give the new vehicle the saved state (this marks the vehicle as busy)
+		// Start the job on the new vehicle, then give it the saved state
+		vehicle.runJob(job);
 		cp.copyTo(vehicle);
 
 		// Work done after the checkpoint was lost, so the job resumes from the
@@ -191,7 +192,7 @@ public class VCController {
 		}
 		job.setStatus("IN_PROGRESS");
 
-		vehicle.runJob(job);
+		availableVehicles.remove(vehicle);
 		jobQueue.remove(job);
 		runningJobs.put(vehicle, job);
 		if (!jobsInProgress.contains(job)) {

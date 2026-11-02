@@ -111,16 +111,56 @@ public class LogWriter {
 	public static synchronized String logJob(String clientId, String jobName, String duration,
 	                                         String deadline, String importance) {
 		String jobId = clientId + "-" + (countRecords(JOBS_FILE, clientId) + 1);
-		logRecord(JOBS_FILE, "Job ID, Client ID, Job Name, Duration, Deadline, Importance",
-				jobId, clientId, jobName, duration, deadline, importance);
+		logRecord(JOBS_FILE, "Job ID, Client ID, Job Name, Duration, Deadline, Importance, Status",
+				jobId, clientId, jobName, duration, deadline, importance, "QUEUED");
 		return jobId;
 	}
 
 	//-----------------------------------------------------
 	// Builds a Job object from one saved job record (ID, name, duration, deadline and priority).
 	public static Job toJob(String[] record) {
-		return new Job(record[1], record[3], Integer.parseInt(record[4]),
+		Job job = new Job(record[1], record[3], Integer.parseInt(record[4]),
 				parseDeadline(record[5]), Integer.parseInt(record[6]));
+		if (record.length > 7) {
+			job.setStatus(record[7]); // rows saved before the Status column was added stay QUEUED
+		}
+		return job;
+	}
+
+	//-----------------------------------------------------
+	// Changes the saved status of one job (for example to CANCELLED) and rewrites jobs.txt.
+	public static synchronized void updateJobStatus(String jobId, String newStatus) {
+		File file = new File(JOBS_FILE);
+		if (!file.exists()) {
+			return;
+		}
+
+		List<String> lines = new ArrayList<>();
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] parts = line.split(", ");
+				if (parts.length >= JOB_COLUMNS && parts[ID_COLUMN].equals(jobId)) {
+					parts = Arrays.copyOf(parts, JOB_COLUMNS + 1); // adds the Status column if missing
+					parts[JOB_COLUMNS] = newStatus;
+					line = String.join(", ", parts);
+				}
+				lines.add(line);
+			}
+		} catch (IOException exception) {
+			System.out.println("Error: Unable to read from " + JOBS_FILE);
+			exception.printStackTrace();
+			return;
+		}
+
+		try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
+			for (String savedLine : lines) {
+				writer.println(savedLine);
+			}
+		} catch (IOException exception) {
+			System.out.println("Unable to write to " + JOBS_FILE);
+			exception.printStackTrace();
+		}
 	}
 
 	//-----------------------------------------------------
