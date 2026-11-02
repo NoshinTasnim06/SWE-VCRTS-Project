@@ -159,7 +159,7 @@ public class Job implements Comparable<Job> {
 	@Override
 	public int compareTo(Job other) {
 		if (priority != other.priority) {
-			return Integer.compare(priority, other.priority);   // higher number first
+			return Integer.compare(priority, other.priority);   // lower number first
 		}
 		if (deadline != null && other.deadline != null) {
 			int byDeadline = deadline.compareTo(other.deadline);
