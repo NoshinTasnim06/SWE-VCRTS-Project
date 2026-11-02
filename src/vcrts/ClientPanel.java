@@ -217,7 +217,7 @@ public class ClientPanel extends BasePanel {
 		String[] saved = LogWriter.findUser("Client", userId);   // timestamp, id, first, last
 		client = new Client(userId, saved[2], saved[3]);
 		for (String[] record : LogWriter.getJobsFor(userId)) {
-			client.getJobs().add(LogWriter.toJob(record));
+		    LogWriter.addSavedJob(client, record);
 		}
 	}
 	
@@ -237,8 +237,13 @@ public class ClientPanel extends BasePanel {
 		if (confirm == JOptionPane.YES_OPTION) {
 			for (Job job : client.getJobs()) {
 				if (job.getJobID().equals(jobID)) {
+					if (job.getStatus().equals("COMPLETED") || job.getStatus().equals("CANCELLED")) {
+						JOptionPane.showMessageDialog(this, "This job is already finished or cancelled.");
+						return;
+					}
 
 					job.setStatus("CANCELLED");
+					LogWriter.updateJobStatus(jobID, "CANCELLED"); // save it so it stays cancelled
 					refreshJobList();
 
 					JOptionPane.showMessageDialog(this, "Job cancelled sucessfully!");
