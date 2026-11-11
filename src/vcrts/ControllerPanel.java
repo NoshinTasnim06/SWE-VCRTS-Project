@@ -13,6 +13,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.*;
+import java.io.*;
 
 /**
  * This class provides the VC Controller interface of the VCRTS application. It lists every
@@ -24,9 +26,90 @@ public class ControllerPanel extends BasePanel {
 
     private VCController controller;
     private DefaultTableModel tableModel;
+    private static DefaultTableModel jobPendingTable;
+    private static DefaultTableModel vehiclePendingTable;
     private JLabel averageLabel = new JLabel("Average waiting time: -");
     private static final String CONTROLLER_PASSWORD = "vcadmin";
-
+    static ServerSocket serverSocket;
+    static Socket clientSocket;
+    static DataInputStream input;
+    static DataOutputStream output;
+    static String messageIn;
+	static String messageOut;
+    
+    public static void main(String[] args) {
+    	messageIn = "";
+    	messageOut = "";
+    	String type;
+    	
+    	System.out.println("Server side--");
+    	try
+    	{
+    		serverSocket = new ServerSocket(0);
+    		clientSocket = serverSocket.accept();
+    		type = clientSocket.getInetAddress().getHostName();
+    		System.out.println(type + " connected!");
+    		
+    		input = new DataInputStream(clientSocket.getInputStream());
+    		output = new DataOutputStream(clientSocket.getOutputStream());
+    		while (!messageIn.equals("Exit"))
+    		{
+    			messageIn = input.readUTF(); // list of fields
+    			serverRequest(type, messageIn);
+    			messageOut = "Request received";
+    			output.writeUTF(messageOut);
+    		}
+    	}
+    	catch (Exception e)
+    	{
+    		e.printStackTrace();
+    	}
+    }
+    
+    public JPanel requestDash()
+    {
+    	JPanel p = new JPanel();
+    	JButton accept = new JButton("Accept");
+    	JButton decline = new JButton("Decline");
+    	JButton back = new JButton("Back");
+    	
+    	jobPendingTable = createTableModel(new String[] {"JobID", "Job Name",
+    			"Duration (min)", "Deadline", "Priority"}, -1);
+    	vehiclePendingTable = createTableModel(new String[] {"Vehicle ID", "Make", "Model",
+    			"Year", "License Plate","RAM (GB)", "CPU Cores", "Storage (GB)"}, -1);
+    	
+    	p.add(new JScrollPane(new JTable(jobPendingTable)));
+    	p.add(new JScrollPane(new JTable(vehiclePendingTable)));
+    	
+    	accept.addActionListener(e -> {
+    		//accept, log
+    		try 
+    		{
+    			messageOut = "JobID has been processed";
+    			output.writeUTF(messageOut);
+    		}
+    		catch (Exception error)
+    		{
+    			error.printStackTrace();
+    		}
+    	});
+    	
+    	return p;
+    }
+    
+    public static void serverRequest(String type, String data)
+    {
+    	String[] dataPart = data.split("");
+    	if (type.equals("Client"))
+    	{
+    		jobPendingTable.addRow(new Object[]{data, data, data, data, data});
+    	}
+    	else
+    	{
+    		vehiclePendingTable.addRow(new Object[]{data, data, data, data, data, data, data, data});
+    	}
+    }
+    
     // ---------------------------------------------------------------------
     // This constructor builds the controller screen, wires its buttons, and makes
     // the job list reload every time the screen is shown.
