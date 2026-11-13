@@ -4,6 +4,8 @@ import vccontroller.Job;
 import vccontroller.Client;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import vccontroller.VCController;
 
 import javax.swing.*;
@@ -30,83 +32,84 @@ public class ControllerPanel extends BasePanel {
     private static DefaultTableModel vehiclePendingTable;
     private JLabel averageLabel = new JLabel("Average waiting time: -");
     private static final String CONTROLLER_PASSWORD = "vcadmin";
-    static ServerSocket serverSocket;
-    static Socket clientSocket;
-    static DataInputStream input;
-    static DataOutputStream output;
-    static String messageIn;
-	static String messageOut;
+    private static ServerSocket serverSocket;
+	private static ConcurrentHashMap<String,ControllerRunnable> clients;
     
-    public static void main(String[] args) {
-    	messageIn = "";
-    	messageOut = "";
-    	String type;
-    	
+    public static void main(String[] args) throws IOException {
     	System.out.println("Server side--");
     	try
     	{
     		serverSocket = new ServerSocket(0);
-    		clientSocket = serverSocket.accept();
-    		type = clientSocket.getInetAddress().getHostName();
-    		System.out.println(type + " connected!");
-    		
-    		input = new DataInputStream(clientSocket.getInputStream());
-    		output = new DataOutputStream(clientSocket.getOutputStream());
-    		while (!messageIn.equals("Exit"))
+    		while (true)
     		{
-    			messageIn = input.readUTF(); // list of fields
-    			serverRequest(type, messageIn);
-    			messageOut = "Request received";
-    			output.writeUTF(messageOut);
+	    		Socket clientSocket = serverSocket.accept();
+	    		ControllerRunnable r = new ControllerRunnable(clientSocket);
+	    		Thread t = new Thread(r);
+	    		t.run();
     		}
     	}
     	catch (Exception e)
     	{
     		e.printStackTrace();
+    		throw new IOException("VCController has disconnected");
     	}
     }
     
-    public JPanel requestDash()
+    public static void addClient(String hostName, ControllerRunnable c) {
+    	clients.put(hostName, c);
+    }
+    
+    public static void removeClient(String hostName) {
+    	clients.remove(hostName);
+    }
+    
+    public JPanel requestDash(VCRTSFrame frame)
     {
     	JPanel p = new JPanel();
     	JButton accept = new JButton("Accept");
     	JButton decline = new JButton("Decline");
     	JButton back = new JButton("Back");
     	
-    	jobPendingTable = createTableModel(new String[] {"JobID", "Job Name",
+    	jobPendingTable = createTableModel(new String[] {"ClientID", "JobID", "Job Name",
     			"Duration (min)", "Deadline", "Priority"}, -1);
-    	vehiclePendingTable = createTableModel(new String[] {"Vehicle ID", "Make", "Model",
+    	vehiclePendingTable = createTableModel(new String[] {"OwnerID", "Vehicle ID", "Make", "Model",
     			"Year", "License Plate","RAM (GB)", "CPU Cores", "Storage (GB)"}, -1);
     	
     	p.add(new JScrollPane(new JTable(jobPendingTable)));
     	p.add(new JScrollPane(new JTable(vehiclePendingTable)));
     	
     	accept.addActionListener(e -> {
-    		//accept, log
-    		try 
-    		{
-    			messageOut = "JobID has been processed";
-    			output.writeUTF(messageOut);
-    		}
-    		catch (Exception error)
-    		{
-    			error.printStackTrace();
-    		}
+    		//log
+			//remove row
+			//add to queue
+			if (clients.containsKey("clientID")) //select clientID table row
+			{
+				clients.get("clientID").reply(true, "clientID");
+			}
     	});
+    	decline.addActionListener(e -> {
+    		//remove row
+    		if (clients.containsKey("clientID")) //select clientID table row
+			{
+				clients.get("clientID").reply(false, "clientID");
+			}
+    	});
+    	
+    	back.addActionListener(e -> frame.showPanel("Home"));
     	
     	return p;
     }
     
-    public static void serverRequest(String type, String data)
+    public synchronized static void serverRequest(String hostName, String data)
     {
     	String[] dataPart = data.split("");
-    	if (type.equals("Client"))
+    	if (hostName.contains("Client"))
     	{
-    		jobPendingTable.addRow(new Object[]{data, data, data, data, data});
+    		jobPendingTable.addRow(new Object[]{data, data, data, data, data, data});
     	}
     	else
     	{
-    		vehiclePendingTable.addRow(new Object[]{data, data, data, data, data, data, data, data});
+    		vehiclePendingTable.addRow(new Object[]{data, data, data, data, data, data, data, data, data});
     	}
     }
     
