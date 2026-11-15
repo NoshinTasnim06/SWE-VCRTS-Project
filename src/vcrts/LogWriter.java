@@ -1,6 +1,7 @@
 /* Project: Vehicular Cloud Real Time System - Milestone 2: GUI
  * Class: LogWriter.java
- * Author: Alisen Lam
+ * Original author: Alisen Lam
+ * LogWriter maintenance updates: Afra
  * Date: October 3, 2026
  * This LogWriter class records client, owner, vehicle, and job information in text files.
  * It adds a timestamp to each record and allows users to be searched by their ID.
@@ -26,6 +27,7 @@ public class LogWriter {
 	private static final String OWNERS_FILE = "owners.txt";
 	private static final String VEHICLES_FILE = "vehicles.txt";
 	private static final String JOBS_FILE = "jobs.txt";
+	private static final String EVENTS_FILE = "events.txt";
 	private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	// Column that holds the record ID in every file, and the column that holds
@@ -35,7 +37,8 @@ public class LogWriter {
 
 	// Number of columns in a complete vehicle record and a complete job record
 	private static final int VEHICLE_COLUMNS = 12;
-	private static final int JOB_COLUMNS = 7;
+	private static final int JOB_COLUMNS = 7; // legacy job records do not include status
+	private static final int JOB_STATUS_COLUMN = 7;
 
 	//-----------------------------------------------------
 	// Keeps only the records with at least the given number of columns, so rows
@@ -68,7 +71,7 @@ public class LogWriter {
 
 	//-----------------------------------------------------
 	// Searches the client or owner records for a user with a specified username.
-	public static String[] findUser(String userType, String username) {
+	public static synchronized String[] findUser(String userType, String username) {
 		String file = userFile(userType);
 		if (file == null) {
 			return null;
@@ -89,7 +92,7 @@ public class LogWriter {
 	public static synchronized String logVehicle(String ownerId, String make, String model, String year,
 	                                             String license, String ramGB, String cpuCores,
 	                                             String storageGB, String residencyTime) {
-		String vehicleId = ownerId + "-" + (countRecords(VEHICLES_FILE, ownerId) + 1);
+		String vehicleId = nextId(VEHICLES_FILE, ownerId);
 		logRecord(VEHICLES_FILE,
 				"Vehicle ID, Owner ID, Make, Model, Year, License, RAM GB, CPU Cores, Storage GB, Residency Time, Status",
 				vehicleId, ownerId, make, model, year, license, ramGB, cpuCores, storageGB, residencyTime, "Available");
@@ -111,7 +114,7 @@ public class LogWriter {
 	// Records job information in the job data file.
 	public static synchronized String logJob(String clientId, String jobName, String duration,
 	                                         String deadline, String importance) {
-		String jobId = clientId + "-" + (countRecords(JOBS_FILE, clientId) + 1);
+		String jobId = nextId(JOBS_FILE, clientId);
 		logRecord(JOBS_FILE, "Job ID, Client ID, Job Name, Duration, Deadline, Importance, Status",
 				jobId, clientId, jobName, duration, deadline, importance, "QUEUED");
 		return jobId;
@@ -120,8 +123,12 @@ public class LogWriter {
 	//-----------------------------------------------------
 	// Builds a Job object from one saved job record (ID, name, duration, deadline and priority).
 	public static Job toJob(String[] record) {
-	    return new Job(record[1], record[3], Integer.parseInt(record[4]),
+	    Job job = new Job(record[1], record[3], Integer.parseInt(record[4]),
 	            parseDeadline(record[5]), Integer.parseInt(record[6]));
+	    if (record.length > JOB_STATUS_COLUMN) {
+	        job.setStatus(record[JOB_STATUS_COLUMN]);
+	    }
+	    return job;
 	}
 
 	//-----------------------------------------------------
@@ -130,6 +137,9 @@ public class LogWriter {
 	public static Job addSavedJob(Client client, String[] record) {
 	    Job job = client.submitJob(record[3], Integer.parseInt(record[4]), parseDeadline(record[5]));
 	    job.setPriority(Integer.parseInt(record[6]));
+	    if (record.length > JOB_STATUS_COLUMN) {
+	        job.setStatus(record[JOB_STATUS_COLUMN]);
+	    }
 	    return job;
 	}
 
@@ -147,8 +157,8 @@ public class LogWriter {
 			while ((line = reader.readLine()) != null) {
 				String[] parts = line.split(", ");
 				if (parts.length >= JOB_COLUMNS && parts[ID_COLUMN].equals(jobId)) {
-					parts = Arrays.copyOf(parts, JOB_COLUMNS + 1); // adds the Status column if missing
-					parts[JOB_COLUMNS] = newStatus;
+					parts = Arrays.copyOf(parts, JOB_STATUS_COLUMN + 1); // adds the Status column if missing
+					parts[JOB_STATUS_COLUMN] = newStatus;
 					line = String.join(", ", parts);
 				}
 				lines.add(line);
@@ -159,14 +169,12 @@ public class LogWriter {
 			return;
 		}
 
-		try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
-			for (String savedLine : lines) {
-				writer.println(savedLine);
-			}
-		} catch (IOException exception) {
-			System.out.println("Unable to write to " + JOBS_FILE);
-			exception.printStackTrace();
+		// Older jobs.txt files may not have the Status header yet.
+		if (!lines.isEmpty() && lines.get(0).startsWith("Timestamp, ")
+				&& !lines.get(0).endsWith(", Status")) {
+			lines.set(0, lines.get(0) + ", Status");
 		}
+		writeLines(file, lines);
 	}
 
 	//-----------------------------------------------------
@@ -187,8 +195,26 @@ public class LogWriter {
 		File file = new File(filename);
 		if (!file.exists() || file.length() == 0) {
 			writeHeader(filename, header);
+		} else if (JOBS_FILE.equals(filename)) {
+			ensureJobStatusHeader(file);
 		}
 		writeToFile(filename, String.join(", ", fields));
+	}
+
+
+	// Upgrade the header of a legacy jobs file without changing saved rows.
+	private static void ensureJobStatusHeader(File file) {
+		try {
+			List<String> lines = java.nio.file.Files.readAllLines(file.toPath());
+			if (!lines.isEmpty() && lines.get(0).startsWith("Timestamp, ")
+					&& !lines.get(0).endsWith(", Status")) {
+				lines.set(0, lines.get(0) + ", Status");
+				writeLines(file, lines);
+			}
+		} catch (IOException exception) {
+			System.err.println("Unable to inspect " + file.getName());
+			exception.printStackTrace();
+		}
 	}
 
 	//-----------------------------------------------------
@@ -225,9 +251,34 @@ public class LogWriter {
 	}
 
 	//-----------------------------------------------------
-	// Counts how many records in a file belong to the given user.
-	private static int countRecords(String filename, String userId) {
-		return findRecords(filename, USER_COLUMN, userId).size();
+	// Finds the largest existing numbered ID for this user, so a deleted row
+	// will not cause a new job or vehicle to reuse an old ID.
+	private static String nextId(String filename, String userId) {
+		int highest = 0;
+		String prefix = userId + "-";
+		for (String[] record : findRecords(filename, USER_COLUMN, userId)) {
+			if (record.length > ID_COLUMN && record[ID_COLUMN].startsWith(prefix)) {
+				try {
+					highest = Math.max(highest, Integer.parseInt(record[ID_COLUMN].substring(prefix.length())));
+				} catch (NumberFormatException ignored) {
+					// Ignore IDs that do not use a numeric suffix.
+				}
+			}
+		}
+		return prefix + (highest + 1);
+	}
+
+	//-----------------------------------------------------
+	// Writes a timestamped application event, such as a socket connection,
+	// approved request, rejected request, or unexpected server error.
+	// Socket classes can call this method when their integration is ready.
+	public static synchronized void logEvent(String source, String event) {
+		logRecord(EVENTS_FILE, "Source, Event", cleanField(source), cleanField(event));
+	}
+
+	// Keep one event on one line and avoid breaking the comma-separated format.
+	private static String cleanField(String value) {
+		return value == null ? "" : value.replace('\r', ' ').replace('\n', ' ').replace(", ", "; ");
 	}
 
 	//-----------------------------------------------------
@@ -250,6 +301,33 @@ public class LogWriter {
 			addData.println(timestamp + ", " + data);
 		} catch (IOException exception) {
 			System.out.println("Unable to write to " + filename);
+			exception.printStackTrace();
+		}
+	}
+
+
+	// Write changes to a temporary file before replacing the original.
+	// This reduces the risk of a partially overwritten data file.
+	private static void writeLines(File file, List<String> lines) {
+		try {
+			java.nio.file.Path original = file.toPath();
+			java.nio.file.Path temp = java.nio.file.Files.createTempFile(
+					original.toAbsolutePath().getParent(), "vcrts-", ".tmp");
+			try {
+				java.nio.file.Files.write(temp, lines, java.nio.charset.StandardCharsets.UTF_8);
+				try {
+					java.nio.file.Files.move(temp, original,
+							java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+							java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+				} catch (java.nio.file.AtomicMoveNotSupportedException exception) {
+					java.nio.file.Files.move(temp, original,
+							java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+				}
+			} finally {
+				java.nio.file.Files.deleteIfExists(temp);
+			}
+		} catch (IOException exception) {
+			System.err.println("Unable to update " + file.getName());
 			exception.printStackTrace();
 		}
 	}
@@ -285,13 +363,6 @@ public class LogWriter {
 		}
 
 		// Write all lines back, replacing the old file contents
-		try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
-			for (String savedLine : lines) {
-				writer.println(savedLine);
-			}
-		} catch (IOException exception) {
-			System.out.println("Unable to write to " + VEHICLES_FILE);
-			exception.printStackTrace();
-		}
+		writeLines(file, lines);
 	}
 }
