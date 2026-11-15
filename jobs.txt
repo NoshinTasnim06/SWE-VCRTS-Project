@@ -9,3 +9,5 @@ Timestamp, Job ID, Client ID, Job Name, Duration, Deadline, Importance
 2026-11-01 20:26:27, HermioneGranger-8, HermioneGranger, Owl, 50, 2026-11-01 23:26:27, 1
 2026-11-01 20:27:29, HermioneGranger-9, HermioneGranger, Ravenclaw, 58, 2026-11-02 02:27:29, 4
 2026-11-01 20:28:02, HermioneGranger-10, HermioneGranger, Hufflepuff, 200, 2026-11-02 04:28:02, 3
+2026-11-15 14:05:53, v-1, v, v, 3, 2026-11-15 17:05:08, 1, QUEUED
+2026-11-15 14:05:57, v-2, v, r, 4, 2026-11-15 18:05:27, 1, CANCELLED
