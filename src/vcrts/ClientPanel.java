@@ -20,7 +20,7 @@ public class ClientPanel extends BasePanel {
 	private CardLayout cardLayout;
 	private JPanel mainContainer;
 
-	private JTextField clientIdField; //same ID from login Panel
+	private JTextField clientIdField; 
 	private JTextField jobNameField;
 	private JTextField durationField; //min
 	private JTextField deadlineField; //hr
