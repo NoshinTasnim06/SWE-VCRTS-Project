@@ -21,7 +21,7 @@ public class ClientConnection {
 
 	// Where the VC Controller listens. The server must use the same port.
 	public static final String HOST = "localhost";
-	public static final int PORT = 5000;
+	public static final int PORT = 9806;
 
 	// The reply the server sends as soon as it receives a request
 	public static final String ACKNOWLEDGMENT = "Request received";

@@ -14,7 +14,6 @@ import vccontroller.VCController;
 public class VCRTSFrame extends JFrame {
     private final CardLayout cardLayout;
     private final JPanel mainPanel;
-    private final VCController controller = new VCController(0.10, new Server());
 
     // ---------------------------------------------------------------------
     // This constructor configures the application window properties, instantiates
@@ -34,13 +33,11 @@ public class VCRTSFrame extends JFrame {
         HomePanel homePanel = new HomePanel(this);
         OwnerPanel ownerPanel = new OwnerPanel(this);
         ClientPanel clientPanel = new ClientPanel(this);
-        ControllerPanel controllerPanel = new ControllerPanel(this, controller);
 
         // Register child view panels with unique string keys inside the container
         mainPanel.add(homePanel, "Home");
         mainPanel.add(ownerPanel, "Owner");
         mainPanel.add(clientPanel, "Client");
-        mainPanel.add(controllerPanel, "Controller");
 
         // Add the container panel to the window frame content pane
         add(mainPanel);
