@@ -224,7 +224,17 @@ public class ClientPanel extends BasePanel {
 		cardLayout.show(mainContainer, "dashUI");
 	}
 
+		// Store the job in jobs.txt
+		LogWriter.logJob(userId, title, String.valueOf(duration),
+				LogWriter.formatDeadline(deadline), String.valueOf(importance));
 
+		JOptionPane.showMessageDialog(this,
+				"Job " + job.getJobID() + " submitted successfully!",
+				"Success", JOptionPane.INFORMATION_MESSAGE);
+		clearFields();
+		refreshJobList();
+		cardLayout.show(mainContainer, "dashUI");
+	}
 
 	// Shows each message from the VC Controller as a popup. The first reply only
 	// confirms the request arrived; the second says whether it was accepted. An
