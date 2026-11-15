@@ -9,6 +9,7 @@ public class Checkpoint {
 	private String vehicleID;
 	private String jobID;
 	private double progressSnapshot;
+	private LocalDateTime latestUpdate;
 
 	public Checkpoint(Vehicle vehicle, Job job) {
 		this.checkpointID = UUID.randomUUID().toString();
@@ -16,6 +17,7 @@ public class Checkpoint {
 		this.vehicleID = vehicle.getVehicleID();
 		this.jobID = job.getJobID();
 		this.progressSnapshot = job.getProgress();
+		this.latestUpdate = timestamp;
 	}
 
 	public String getJobID() {
@@ -32,6 +34,14 @@ public class Checkpoint {
 
 	public LocalDateTime getTimestamp() {
 		return timestamp;
+	}
+	
+	public LocalDateTime getLatestUpdate() {
+		return latestUpdate;
+	}
+	
+	public void setLatestUpdate(LocalDateTime time) {
+		latestUpdate = time;
 	}
 
 	public String getVehicleID() {

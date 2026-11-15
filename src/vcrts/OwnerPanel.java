@@ -10,6 +10,7 @@
 package vcrts;
 
 import javax.swing.*;
+import java.io.IOException;
 import java.awt.*;
 import java.time.Year;
 import javax.swing.table.DefaultTableModel;
@@ -26,13 +27,13 @@ public class OwnerPanel extends BasePanel {
     private static final int MIN_VEHICLE_YEAR = 1900;
 
     // Position of each form field inside the fields and errors arrays (same order as the form)
-    private static final int MAKE = 0, MODEL = 1, YEAR = 2, LICENSE = 3,
-            RESIDENCY = 4, RAM = 5, CPU = 6, STORAGE = 7;
+    private static final int OWNER_ID = 0, MAKE = 1, MODEL = 2, YEAR = 3, LICENSE = 4,
+            RESIDENCY = 5, RAM = 6, CPU = 7, STORAGE = 8;
 
-    private static final String[] LABELS = {"Vehicle Make:", "Vehicle Model:", "Vehicle Year:",
+    private static final String[] LABELS = {"Owner ID:", "Vehicle Make:", "Vehicle Model:", "Vehicle Year:",
             "License Plate:", "Residency Time (hours):", "RAM (GB):", "CPU Cores:", "Storage (GB):"};
 
-    private static final String[] ERRORS = {"Vehicle make is required (no commas)",
+    private static final String[] ERRORS = {"Owner ID does not match your account", "Vehicle make is required (no commas)",
             "Vehicle model is required (no commas)", "Must enter a valid 4-digit year",
             "License plate is required (no commas)", "Must be a whole number greater than 0",
             "Must be a whole number greater than 0", "Must be a whole number greater than 0",
@@ -42,6 +43,10 @@ public class OwnerPanel extends BasePanel {
     private final JLabel[] errors = new JLabel[LABELS.length];
 
     private CardLayout cardLayout;
+    
+    // Sends vehicles to the VC Controller (server) and shows its replies as popups
+    private final ClientConnection connection = new ClientConnection(this::showServerMessage);
+    
     private JPanel mainContainer;
 
     private JLabel ownerIdLabel = new JLabel("Owner:");
@@ -117,6 +122,7 @@ public class OwnerPanel extends BasePanel {
     // visual error states on each field and returning whether every field passed inspection.
     private boolean validateFields() {
         boolean[] passed = new boolean[fields.length];
+        passed[OWNER_ID] = text(OWNER_ID).equals(userId);
         passed[MAKE] = isValidText(fields[MAKE]);
         passed[MODEL] = isValidText(fields[MODEL]);
         passed[YEAR] = isValidYear(text(YEAR));
@@ -147,24 +153,49 @@ public class OwnerPanel extends BasePanel {
     }
 
     // ---------------------------------------------------------------------
-    // This method processes form submission by validating inputs, saving the
-    // vehicle data via the LogWriter utility, displaying a confirmation alert,
-    // and resetting form fields.
+    // This method processes form submission by validating inputs, sending the
+    // vehicle to the VC Controller for approval, and resetting form fields.
+    // The vehicle is saved only if the controller accepts it.
     private void handleSubmit() {
         if (!validateFields()) {
             return;
         }
 
-        // Log vehicle details to persistent storage under the current user ID
-        String vehicleId = LogWriter.logVehicle(userId, text(MAKE), text(MODEL), text(YEAR),
-                text(LICENSE), text(RAM), text(CPU), text(STORAGE), text(RESIDENCY));
+        // Send the vehicle to the VC Controller. It is not saved here: the
+        // server saves it to vehicles.txt only if the controller accepts it.
+        try {
+            connection.sendVehicle(userId, text(MAKE), text(MODEL), text(YEAR), text(LICENSE),
+                    text(RAM), text(CPU), text(STORAGE), text(RESIDENCY));
+        } catch (IOException exception) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not reach the VC Controller. Make sure it is running, then try again.",
+                    "Vehicle Not Sent", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-        JOptionPane.showMessageDialog(this,
-                "Vehicle " + vehicleId + " registered successfully!",
-                "Success", JOptionPane.INFORMATION_MESSAGE);
         clearFields();
-        refreshVehicles();
         cardLayout.show(mainContainer, "dash");
+    }
+
+        // ---------------------------------------------------------------------
+    // This method shows each message from the VC Controller as a popup. The
+    // first reply only confirms the request arrived; the second says whether
+    // it was accepted. An accepted vehicle is now in vehicles.txt, so the list
+    // is reloaded to show it.
+    private void showServerMessage(String message) {
+        if (message.equals(ClientConnection.ACKNOWLEDGMENT)) {
+            JOptionPane.showMessageDialog(this,
+                    "Your vehicle was sent to the VC Controller. You'll get a message when it is accepted or rejected.",
+                    "Request Received", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, message, "VC Controller", JOptionPane.INFORMATION_MESSAGE);
+        String lower = message.toLowerCase();
+        boolean accepted = lower.contains("processed") || lower.contains("accepted");
+        if (accepted && userId != null) {
+            refreshVehicles();
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -210,6 +241,7 @@ public class OwnerPanel extends BasePanel {
         addVehicleButton.addActionListener(e -> cardLayout.show(mainContainer, "form"));
         residencyButton.addActionListener(e -> updateResidency());
         logout.addActionListener(e -> {
+            connection.disconnect();
             userId = null;
             cardLayout.show(mainContainer, "login");
         });

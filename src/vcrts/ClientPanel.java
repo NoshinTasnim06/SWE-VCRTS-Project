@@ -2,6 +2,7 @@ package vcrts;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import javax.swing.table.DefaultTableModel;
 import vccontroller.Client;
@@ -19,16 +20,23 @@ public class ClientPanel extends BasePanel {
 	private CardLayout cardLayout;
 	private JPanel mainContainer;
 
+	private JTextField clientIdField; 
 	private JTextField jobNameField;
 	private JTextField durationField; //min
 	private JTextField deadlineField; //hr
+	private JTextField priorityField;
+	private JLabel clientIdError;
 	private JLabel jobNameError;
 	private JLabel durationError;
 	private JLabel deadlineError;
+	private JLabel priorityError;
 
-	private JComboBox<Integer> importanceBox;
 	private JLabel clientIdLabel = new JLabel("Client:");
+	
+	// Sends jobs to the VC Controller (server) and shows its replies as popups
+	private final ClientConnection connection = new ClientConnection(this::showServerMessage);
 	private Client client;
+	private JTable jobTable;
 
 	// ---------------------------------------------------------------------
 	// This constructor creates the login, dashboard and job form panels and
@@ -59,20 +67,24 @@ public class ClientPanel extends BasePanel {
 	public JPanel jobForm() {
 		JPanel p = new JPanel(new GridBagLayout());
 		p.setBorder(BorderFactory.createTitledBorder("Submit a Job"));
+		clientIdField = new JTextField(FIELD_WIDTH);	
 		jobNameField = new JTextField(FIELD_WIDTH);
 		durationField = new JTextField(FIELD_WIDTH);
 		deadlineField = new JTextField(FIELD_WIDTH);
-		importanceBox = new JComboBox<>(new Integer[]{1, 2, 3, 4, 5});
+		priorityField = new JTextField(FIELD_WIDTH);
+		clientIdError = createErrorLabel("Client ID does not match your account");
 		jobNameError = createErrorLabel("Job title is required (no commas)");
 		durationError = createErrorLabel("Must be a whole number greater than 0");
 		deadlineError = createErrorLabel("Must be a whole number greater than 0, or leave blank");
-
+		priorityError = createErrorLabel("Must be a valid integer");
+		
 		// The deadline is optional, if none is set the job is simply queued
 		nextRow = 0;
+		addFieldRow(p, "Client ID:", clientIdField, clientIdError);
 		addFieldRow(p, "Job Title:", jobNameField, jobNameError);
 		addFieldRow(p, "Estimate Job Duration in Minutes:", durationField, durationError);
 		addFieldRow(p, "Job Deadline in Hours:", deadlineField, deadlineError);
-		addComboRow(p, "Importance (1-5):", importanceBox);
+		addFieldRow(p, "Priority:", priorityField, priorityError);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;
@@ -101,20 +113,25 @@ public class ClientPanel extends BasePanel {
 		JPanel p = new JPanel(new BorderLayout());
 
 		// Add future buttons (e.g. Payment) after newJobButton; nothing else moves
-		JButton logout = buttonForm("Logout");
+		JButton logout = new JButton("Logout");
 		JButton newJobButton = new JButton("Add Job");
-		p.add(createDashTop(clientIdLabel, logout, newJobButton), BorderLayout.NORTH);
+		JButton cancelJobButton = new JButton("Cancel Job");
+		p.add(createDashTop(clientIdLabel, logout, newJobButton, cancelJobButton), BorderLayout.NORTH);
 
 		jobListModel = createTableModel(
-				new String[]{"Job ID", "Job Name", "Duration (min)", "Deadline", "Importance"}, -1);
-		p.add(new JScrollPane(new JTable(jobListModel)), BorderLayout.CENTER);
+				new String[]{"Job ID", "Job Name", "Duration (min)", "Deadline", "Importance", "Status"}, -1);
+		
+		jobTable = new JTable(jobListModel);
+		p.add(new JScrollPane(jobTable), BorderLayout.CENTER);
 
 		newJobButton.addActionListener(e -> cardLayout.show(mainContainer, "newJobUI"));
+		cancelJobButton.addActionListener(e -> cancelJob());
+		
 		logout.addActionListener(e -> {
+			connection.disconnect();
 			userId = null;
 			cardLayout.show(mainContainer, "loginUI");
 		});
-
 		return p;
 	}
 
@@ -123,18 +140,8 @@ public class ClientPanel extends BasePanel {
 		jobListModel.setRowCount(0);
 		for (Job job : client.getJobs()) {
 			jobListModel.addRow(new Object[]{job.getJobID(), job.getJobName(), job.getDuration(),
-					LogWriter.formatDeadline(job.getDeadline()), job.getPriority()});
+					LogWriter.formatDeadline(job.getDeadline()), job.getPriority(), job.getStatus()});
 		}
-	}
-
-	//format buttons in header
-	public JButton buttonForm(String s) {
-		JButton b = new JButton(s);
-		b.setBorderPainted(false);
-		b.setFocusPainted(false);
-		b.setContentAreaFilled(false);
-		b.setOpaque(false);
-		return b;
 	}
 
 	//structures bottom buttons of newJobUI
@@ -162,11 +169,14 @@ public class ClientPanel extends BasePanel {
 	public boolean validateFields() {
 		boolean allValid = true;
 
+		allValid &= checkField(clientIdField, clientIdError, clientIdField.getText().trim().equals(userId));
 		allValid &= checkField(jobNameField, jobNameError, isValidText(jobNameField));
 		allValid &= checkField(durationField, durationError,
 				isPositiveInteger(durationField.getText()));
 		allValid &= checkField(deadlineField, deadlineError,
 				isBlank(deadlineField) || isPositiveInteger(deadlineField.getText()));
+		allValid &= checkField(priorityField, priorityError,
+				isPositiveInteger(priorityField.getText()));
 		return allValid;
 	}
 
@@ -175,11 +185,11 @@ public class ClientPanel extends BasePanel {
 		jobNameField.setText("");
 		durationField.setText("");
 		deadlineField.setText("");
+		priorityField.setText("");
 		checkField(jobNameField, jobNameError, true);
 		checkField(durationField, durationError, true);
 		checkField(deadlineField, deadlineError, true);
-
-		importanceBox.setSelectedIndex(0);
+		checkField(priorityField, priorityError, true);
 	}
 
 	// validates the form, creates the job, saves it and returns to the dashboard
@@ -191,7 +201,7 @@ public class ClientPanel extends BasePanel {
 		// Read the validated entries
 		String title = jobNameField.getText().trim();
 		int duration = Integer.parseInt(durationField.getText().trim());
-		int importance = (Integer) importanceBox.getSelectedItem();
+		int importance = Integer.parseInt(priorityField.getText().trim());
 
 		// The deadline is entered in hours from now, so turn it into a date and time
 		LocalDateTime deadline = null;
@@ -199,9 +209,20 @@ public class ClientPanel extends BasePanel {
 			deadline = LocalDateTime.now().plusHours(Integer.parseInt(deadlineField.getText().trim()));
 		}
 
-		// Send the job to the Client class and set its priority
-		Job job = client.submitJob(title, duration, deadline);
-		job.setPriority(importance);
+		// Send the job to the VC Controller. It is not saved here. The server
+		// saves it to jobs.txt only if the controller accepts it.
+		try {
+			connection.sendJob(userId, title, duration, LogWriter.formatDeadline(deadline), importance);
+		} catch (IOException exception) {
+			JOptionPane.showMessageDialog(this,
+					"Could not reach the VC Controller. Make sure it is running, then try again.",
+					"Job Not Sent", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		clearFields();
+		cardLayout.show(mainContainer, "dashUI");
+	}
 
 		// Store the job in jobs.txt
 		LogWriter.logJob(userId, title, String.valueOf(duration),
@@ -215,13 +236,68 @@ public class ClientPanel extends BasePanel {
 		cardLayout.show(mainContainer, "dashUI");
 	}
 
+	// Shows each message from the VC Controller as a popup. The first reply only
+	// confirms the request arrived; the second says whether it was accepted. An
+	// accepted job is now in jobs.txt, so the list is reloaded to show it.
+	private void showServerMessage(String message) {
+		if (message.equals(ClientConnection.ACKNOWLEDGMENT)) {
+			JOptionPane.showMessageDialog(this,
+					"Your job was sent to the VC Controller. You'll get a message when it is accepted or rejected.",
+					"Request Received", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+
+		JOptionPane.showMessageDialog(this, message, "VC Controller", JOptionPane.INFORMATION_MESSAGE);
+		if (isAccepted(message) && userId != null) {
+			openClient();
+			refreshJobList();
+		}
+	}
+
+	// The server's decision says "processed" (or "accepted") when a request is approved
+	private boolean isAccepted(String message) {
+		String lower = message.toLowerCase();
+		return lower.contains("processed") || lower.contains("accepted");
+	}
 	// Creates the Client object for the user who just logged in and reloads
 	// their saved jobs from jobs.txt, so new job IDs continue after the saved ones
 	private void openClient() {
 		String[] saved = LogWriter.findUser("Client", userId);   // timestamp, id, first, last
 		client = new Client(userId, saved[2], saved[3]);
 		for (String[] record : LogWriter.getJobsFor(userId)) {
-			client.getJobs().add(LogWriter.toJob(record));
+		    LogWriter.addSavedJob(client, record);
+		}
+	}
+	
+	// Updates display for a canceled job
+	private void cancelJob() {
+		int row = jobTable.getSelectedRow();
+		if (row < 0) {
+			JOptionPane.showMessageDialog(this, "Select a job in the list first.");
+			return;
+		}
+
+		String jobID = jobListModel.getValueAt(row, 0).toString();
+
+		int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to cancel this job?",
+				"Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+
+		if (confirm == JOptionPane.YES_OPTION) {
+			for (Job job : client.getJobs()) {
+				if (job.getJobID().equals(jobID)) {
+					if (job.getStatus().equals("COMPLETED") || job.getStatus().equals("CANCELLED")) {
+						JOptionPane.showMessageDialog(this, "This job is already finished or cancelled.");
+						return;
+					}
+
+					job.setStatus("CANCELLED");
+					LogWriter.updateJobStatus(jobID, "CANCELLED"); // save it so it stays cancelled
+					refreshJobList();
+
+					JOptionPane.showMessageDialog(this, "Job cancelled sucessfully!");
+					return;
+				}
+			}
 		}
 	}
 }

@@ -145,17 +145,17 @@ public class BasePanel extends JPanel {
     // panel, wiring together form fields, submit actions, and backend
     // verification for both clients and vehicle owners.
     public JPanel createLoginPanel(String userType, Runnable onSuccess, Runnable onBack) {
-        JTextField userField = new JTextField(FIELD_WIDTH);
+        JTextField idField = new JTextField(FIELD_WIDTH);
         JTextField firstField = new JTextField(FIELD_WIDTH);
         JTextField lastField = new JTextField(FIELD_WIDTH);
-        String userRequired = "Username is required (no commas)";
-        JLabel userError = createErrorLabel(userRequired);
+        String idRequired = "ID is required (no commas)";
+        JLabel idError = createErrorLabel(idRequired);
         JLabel firstError = createErrorLabel("First name is required (no commas)");
         JLabel lastError = createErrorLabel("Last name is required (no commas)");
 
         JPanel form = new JPanel(new GridBagLayout());
         nextRow = 0;
-        addFieldRow(form, "Username:", userField, userError);
+        addFieldRow(form, userType + " ID:", idField, idError);
         addFieldRow(form, "First Name:", firstField, firstError);
         addFieldRow(form, "Last Name:", lastField, lastError);
 
@@ -169,19 +169,19 @@ public class BasePanel extends JPanel {
 
         // Reset input fields to empty strings and clear any visible error borders
         Runnable clear = () -> {
-            userField.setText("");
+            idField.setText("");
             firstField.setText("");
             lastField.setText("");
-            checkField(userField, userError, true);
+            checkField(idField, idError, true);
             checkField(firstField, firstError, true);
             checkField(lastField, lastError, true);
         };
 
         // Check all three fields together, marking each invalid one with its error
         BooleanSupplier validate = () -> {
-            userError.setText(userRequired);
+            idError.setText(idRequired);
             boolean allValid = true;
-            allValid &= checkField(userField, userError, isValidText(userField));
+            allValid &= checkField(idField, idError, isValidText(idField));
             allValid &= checkField(firstField, firstError, isValidText(firstField));
             allValid &= checkField(lastField, lastError, isValidText(lastField));
             return allValid;
@@ -199,14 +199,14 @@ public class BasePanel extends JPanel {
                 return;
             }
 
-            String username = userField.getText().trim();
+            String username = idField.getText().trim();
             String[] user = LogWriter.findUser(userType, username);
             boolean matches = user != null
                     && user[2].equalsIgnoreCase(firstField.getText().trim())
                     && user[3].equalsIgnoreCase(lastField.getText().trim());
             if (!matches) {
-                userError.setText("No account matches these details");
-                checkField(userField, userError, false);
+                idError.setText("No account matches these details");
+                checkField(idField, idError, false);
                 return;
             }
 
@@ -215,22 +215,22 @@ public class BasePanel extends JPanel {
             onSuccess.run();
         });
 
-        // Validate form inputs, ensure the username is not already registered,
+        // Validate form inputs, ensure the ID is not already registered,
         // save new user data to the system, and execute success callback
         signUpButton.addActionListener(event -> {
             if (!validate.getAsBoolean()) {
                 return;
             }
 
-            String username = userField.getText().trim();
-            if (LogWriter.findUser(userType, username) != null) {
-                userError.setText("Username already taken");
-                checkField(userField, userError, false);
+            String idLabel = idField.getText().trim();
+            if (LogWriter.findUser(userType, idLabel) != null) {
+                idError.setText("ID already taken");
+                checkField(idField, idError, false);
                 return;
             }
 
-            LogWriter.logUser(userType, username, firstField.getText().trim(), lastField.getText().trim());
-            userId = username;
+            LogWriter.logUser(userType, idLabel, firstField.getText().trim(), lastField.getText().trim());
+            userId = idLabel;
             clear.run();
             onSuccess.run();
         });

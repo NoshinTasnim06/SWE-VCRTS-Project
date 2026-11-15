@@ -3,17 +3,6 @@ package vccontroller;
 import java.util.*;
 import java.time.*;
 
-/* Need to implement Or correct
- * + assignJob(job: Job): void
- * + triggerCheckpoint(job: Job): void
- * + recruitVehicle(job: Job): Vehicle
- * + restartJob(job: Job, vehicle: Vehicle, cp: Checkpoint): void
- * + removeJob(job: Job, status: String): void
- * + handleDeparture(vehicle: Vehicle): void
- * + getCompletedJobs(): List<Job>
- * + calculateJobCost(job: Job): double
- */
-
 /**
  * This class is the central controller of the Vehicular Cloud. It keeps the queue of
  * waiting jobs, the pool of available vehicles and the saved checkpoints, assigns jobs
@@ -30,7 +19,6 @@ public class VCController {
 	private Server server;
 	private Map<String, Client> clients;
 	private Map<String, Owner> owners;
-	private Map<String, Vehicle> vehicles;
 	private Map<Vehicle, Job> runningJobs;
 
 	// ---------------------------------------------------------------------
@@ -46,7 +34,6 @@ public class VCController {
 		checkpoints = new ArrayList<>();
 		clients = new HashMap<>();
 		owners = new HashMap<>();
-		vehicles = new HashMap<>();
 		runningJobs = new HashMap<>();
 	}
 
@@ -60,15 +47,14 @@ public class VCController {
 		return owners.get(ownerID);
 	}
 
-	public Vehicle findVehicle(String vehicleID) {
-		return vehicles.get(vehicleID);
-	}
-
 	// ---------------------------------------------------------------------
 	// This method adds a job to the waiting queue unless it was cancelled.
 	public void addJobToQueue(Job job) {
 		if (job != null && !job.getStatus().equals("CANCELLED")) {
-			jobQueue.offer(job);
+		    jobQueue.offer(job);
+		    if (job.getClient() != null) {
+		        clients.put(job.getClient().getClientID(), job.getClient());
+		    }
 		}
 	}
 
@@ -91,8 +77,8 @@ public class VCController {
 		}
 		if (vehicle.isAvailable() && !availableVehicles.contains(vehicle)) {
 			availableVehicles.add(vehicle);
+			owners.put(vehicle.getOwner().getOwnerID(),vehicle.getOwner());
 		}
-		vehicles.put(vehicle.getVehicleID(), vehicle);
 	}
 
 	// ---------------------------------------------------------------------
@@ -186,7 +172,8 @@ public class VCController {
 			throw new IllegalStateException("Vehicle is not available.");
 		}
 
-		// Give the new vehicle the saved state (this marks the vehicle as busy)
+		// Start the job on the new vehicle, then give it the saved state
+		vehicle.runJob(job);
 		cp.copyTo(vehicle);
 
 		// Work done after the checkpoint was lost, so the job resumes from the
@@ -196,7 +183,7 @@ public class VCController {
 		}
 		job.setStatus("IN_PROGRESS");
 
-		vehicle.runJob(job);
+		availableVehicles.remove(vehicle);
 		jobQueue.remove(job);
 		runningJobs.put(vehicle, job);
 		if (!jobsInProgress.contains(job)) {
@@ -213,6 +200,7 @@ public class VCController {
 		if (job == null || status == null) {
 			throw new IllegalArgumentException("Job and status are required.");
 		}
+		boolean removeClient = true;
 		String finalStatus = status.trim().toUpperCase();
 		if (!finalStatus.equals("COMPLETED") && !finalStatus.equals("CANCELLED")
 				&& !finalStatus.equals("FAILED")) {
@@ -246,6 +234,17 @@ public class VCController {
 				job.getClient().addCharge(calculateJobCost(job));
 			}
 		}
+		//if needed removes client from client list
+		for (Job j : job.getClient().getJobs())
+		{
+			if (j.getStatus().equals("IN_PROGRESS") || j.getStatus().equals("QUEUED"))
+			{
+				removeClient = false;
+				break;
+			}
+		}
+		if (removeClient)
+			clients.remove(job.getClient().getClientID());
 	}
 
 	// ---------------------------------------------------------------------
@@ -284,6 +283,7 @@ public class VCController {
 		// Erase the vehicle's copy of the computation, then let it leave
 		vehicle.eraseData();
 		vehicle.depart();
+		owners.remove(vehicle.getOwner().getOwnerID()); //removes vehicle owner from owner list
 	}
 
 	// Orders the queued jobs by priority and fills in each job's waiting and
@@ -325,9 +325,10 @@ public class VCController {
 		{
 			if (c.getJobID().equals(job.getJobID()))
 			{
-				progress += Math.round((Duration.between(c.getTimestamp(), currTime).toMinutes() / (job.getDuration()*1.0)) * 10000)
+				progress += Math.round((Duration.between(c.getLatestUpdate(), currTime).toMinutes() / (job.getDuration()*1.0)) * 10000)
 						/100.0;
 				job.updateProgress(progress);
+				c.setLatestUpdate(currTime);
 				if (job.getProgress() == 100)
 				{
 					removeJob(job, "COMPLETED");

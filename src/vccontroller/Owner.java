@@ -36,8 +36,6 @@ public class Owner extends Person {
 
 	// ---------------------------------------------------------------------
 	// Registers a new vehicle and adds it to the owner's vehicle list. 
-
-	//If combining with GUI, this may not be necessary.
 	public Vehicle registerVehicle(String make, String model, int year, String licensePlate, int ramGB, int cpuCores, int storageGB, int residencyTime) {
 		String vehicleId = ownerID + "-" + (vehicleList.size() + 1);
 		
