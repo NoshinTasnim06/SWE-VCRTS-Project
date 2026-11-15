@@ -4,6 +4,8 @@ import vccontroller.Job;
 import vccontroller.Client;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import vccontroller.VCController;
 
 import javax.swing.*;
@@ -13,6 +15,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.*;
+import java.io.*;
 
 /**
  * This class provides the VC Controller interface of the VCRTS application. It lists every
@@ -24,9 +28,91 @@ public class ControllerPanel extends BasePanel {
 
     private VCController controller;
     private DefaultTableModel tableModel;
+    private static DefaultTableModel jobPendingTable;
+    private static DefaultTableModel vehiclePendingTable;
     private JLabel averageLabel = new JLabel("Average waiting time: -");
     private static final String CONTROLLER_PASSWORD = "vcadmin";
-
+    private static ServerSocket serverSocket;
+	private static ConcurrentHashMap<String,ControllerRunnable> clients;
+    
+    public static void main(String[] args) throws IOException {
+    	System.out.println("Server side--");
+    	try
+    	{
+    		serverSocket = new ServerSocket(0);
+    		while (true)
+    		{
+	    		Socket clientSocket = serverSocket.accept();
+	    		ControllerRunnable r = new ControllerRunnable(clientSocket);
+	    		Thread t = new Thread(r);
+	    		t.run();
+    		}
+    	}
+    	catch (Exception e)
+    	{
+    		e.printStackTrace();
+    		throw new IOException("VCController has disconnected");
+    	}
+    }
+    
+    public static void addClient(String hostName, ControllerRunnable c) {
+    	clients.put(hostName, c);
+    }
+    
+    public static void removeClient(String hostName) {
+    	clients.remove(hostName);
+    }
+    
+    public JPanel requestDash(VCRTSFrame frame)
+    {
+    	JPanel p = new JPanel();
+    	JButton accept = new JButton("Accept");
+    	JButton decline = new JButton("Decline");
+    	JButton back = new JButton("Back");
+    	
+    	jobPendingTable = createTableModel(new String[] {"ClientID", "JobID", "Job Name",
+    			"Duration (min)", "Deadline", "Priority"}, -1);
+    	vehiclePendingTable = createTableModel(new String[] {"OwnerID", "Vehicle ID", "Make", "Model",
+    			"Year", "License Plate","RAM (GB)", "CPU Cores", "Storage (GB)"}, -1);
+    	
+    	p.add(new JScrollPane(new JTable(jobPendingTable)));
+    	p.add(new JScrollPane(new JTable(vehiclePendingTable)));
+    	
+    	accept.addActionListener(e -> {
+    		//log
+			//remove row
+			//add to queue
+			if (clients.containsKey("clientID")) //select clientID table row
+			{
+				clients.get("clientID").reply(true, "clientID");
+			}
+    	});
+    	decline.addActionListener(e -> {
+    		//remove row
+    		if (clients.containsKey("clientID")) //select clientID table row
+			{
+				clients.get("clientID").reply(false, "clientID");
+			}
+    	});
+    	
+    	back.addActionListener(e -> frame.showPanel("Home"));
+    	
+    	return p;
+    }
+    
+    public synchronized static void serverRequest(String hostName, String data)
+    {
+    	String[] dataPart = data.split("");
+    	if (hostName.contains("Client"))
+    	{
+    		jobPendingTable.addRow(new Object[]{data, data, data, data, data, data});
+    	}
+    	else
+    	{
+    		vehiclePendingTable.addRow(new Object[]{data, data, data, data, data, data, data, data, data});
+    	}
+    }
+    
     // ---------------------------------------------------------------------
     // This constructor builds the controller screen, wires its buttons, and makes
     // the job list reload every time the screen is shown.
