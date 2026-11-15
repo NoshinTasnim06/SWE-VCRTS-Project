@@ -27,6 +27,7 @@ public class OwnerPanel extends BasePanel {
     private static final int MIN_VEHICLE_YEAR = 1900;
 
     // Position of each form field inside the fields and errors arrays (same order as the form)
+    //Owner ID is the same ID from login Panel
     private static final int OWNER_ID = 0, MAKE = 1, MODEL = 2, YEAR = 3, LICENSE = 4,
             RESIDENCY = 5, RAM = 6, CPU = 7, STORAGE = 8;
 
