@@ -27,13 +27,13 @@ public class OwnerPanel extends BasePanel {
     private static final int MIN_VEHICLE_YEAR = 1900;
 
     // Position of each form field inside the fields and errors arrays (same order as the form)
-    private static final int MAKE = 0, MODEL = 1, YEAR = 2, LICENSE = 3,
-            RESIDENCY = 4, RAM = 5, CPU = 6, STORAGE = 7;
+    private static final int OWNER_ID = 0, MAKE = 1, MODEL = 2, YEAR = 3, LICENSE = 4,
+            RESIDENCY = 5, RAM = 6, CPU = 7, STORAGE = 8;
 
-    private static final String[] LABELS = {"Vehicle Make:", "Vehicle Model:", "Vehicle Year:",
+    private static final String[] LABELS = {"Owner ID:", "Vehicle Make:", "Vehicle Model:", "Vehicle Year:",
             "License Plate:", "Residency Time (hours):", "RAM (GB):", "CPU Cores:", "Storage (GB):"};
 
-    private static final String[] ERRORS = {"Vehicle make is required (no commas)",
+    private static final String[] ERRORS = {"Owner ID does not match your account", "Vehicle make is required (no commas)",
             "Vehicle model is required (no commas)", "Must enter a valid 4-digit year",
             "License plate is required (no commas)", "Must be a whole number greater than 0",
             "Must be a whole number greater than 0", "Must be a whole number greater than 0",
@@ -122,6 +122,7 @@ public class OwnerPanel extends BasePanel {
     // visual error states on each field and returning whether every field passed inspection.
     private boolean validateFields() {
         boolean[] passed = new boolean[fields.length];
+        passed[OWNER_ID] = text(OWNER_ID).equals(userId);
         passed[MAKE] = isValidText(fields[MAKE]);
         passed[MODEL] = isValidText(fields[MODEL]);
         passed[YEAR] = isValidYear(text(YEAR));

@@ -20,9 +20,11 @@ public class ClientPanel extends BasePanel {
 	private CardLayout cardLayout;
 	private JPanel mainContainer;
 
+	private JTextField clientIdField; 
 	private JTextField jobNameField;
 	private JTextField durationField; //min
 	private JTextField deadlineField; //hr
+	private JLabel clientIdError;
 	private JLabel jobNameError;
 	private JLabel durationError;
 	private JLabel deadlineError;
@@ -64,16 +66,19 @@ public class ClientPanel extends BasePanel {
 	public JPanel jobForm() {
 		JPanel p = new JPanel(new GridBagLayout());
 		p.setBorder(BorderFactory.createTitledBorder("Submit a Job"));
+		clientIdField = new JTextField(FIELD_WIDTH);	
 		jobNameField = new JTextField(FIELD_WIDTH);
 		durationField = new JTextField(FIELD_WIDTH);
 		deadlineField = new JTextField(FIELD_WIDTH);
 		importanceBox = new JComboBox<>(new Integer[]{1, 2, 3, 4, 5});
+		clientIdError = createErrorLabel("Client ID does not match your account");
 		jobNameError = createErrorLabel("Job title is required (no commas)");
 		durationError = createErrorLabel("Must be a whole number greater than 0");
 		deadlineError = createErrorLabel("Must be a whole number greater than 0, or leave blank");
 
 		// The deadline is optional, if none is set the job is simply queued
 		nextRow = 0;
+		addFieldRow(p, "Client ID:", clientIdField, clientIdError);
 		addFieldRow(p, "Job Title:", jobNameField, jobNameError);
 		addFieldRow(p, "Estimate Job Duration in Minutes:", durationField, durationError);
 		addFieldRow(p, "Job Deadline in Hours:", deadlineField, deadlineError);
@@ -162,6 +167,7 @@ public class ClientPanel extends BasePanel {
 	public boolean validateFields() {
 		boolean allValid = true;
 
+		allValid &= checkField(clientIdField, clientIdError, clientIdField.getText().trim().equals(userId));
 		allValid &= checkField(jobNameField, jobNameError, isValidText(jobNameField));
 		allValid &= checkField(durationField, durationError,
 				isPositiveInteger(durationField.getText()));
