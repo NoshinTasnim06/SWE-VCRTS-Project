@@ -35,4 +35,10 @@ The objective is to provide a system that:
 * Added a priority field to support priority-based scheduling.
 * Calculated Average Waiting Time and Completion Time.
 
-### Milestone 5: Client Server
+### Milestone 5: Client-Server
+* Client-Server Architecture: Completed.
+* Implemented client-server communication between Task Owners, Vehicle Owners, and the VC Controller.
+* Enabled clients to submit data requests for server-side approval.
+* Added request acknowledgments and approval/rejection notifications.
+* Developed a VCController interface to accept or reject requests, ensuring only approved data is stored.
+* Incorporated multithreading to handle client-server communication and incoming requests.
