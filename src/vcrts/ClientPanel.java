@@ -2,6 +2,7 @@ package vcrts;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import javax.swing.table.DefaultTableModel;
 import vccontroller.Client;
@@ -28,6 +29,9 @@ public class ClientPanel extends BasePanel {
 
 	private JComboBox<Integer> importanceBox;
 	private JLabel clientIdLabel = new JLabel("Client:");
+	
+	// Sends jobs to the VC Controller (server) and shows its replies as popups
+	private final ClientConnection connection = new ClientConnection(this::showServerMessage);
 	private Client client;
 	private JTable jobTable;
 
@@ -117,10 +121,10 @@ public class ClientPanel extends BasePanel {
 		cancelJobButton.addActionListener(e -> cancelJob());
 		
 		logout.addActionListener(e -> {
+			connection.disconnect();
 			userId = null;
 			cardLayout.show(mainContainer, "loginUI");
 		});
-
 		return p;
 	}
 
@@ -195,9 +199,20 @@ public class ClientPanel extends BasePanel {
 			deadline = LocalDateTime.now().plusHours(Integer.parseInt(deadlineField.getText().trim()));
 		}
 
-		// Send the job to the Client class and set its priority
-		Job job = client.submitJob(title, duration, deadline);
-		job.setPriority(importance);
+		// Send the job to the VC Controller. It is not saved here. The server
+		// saves it to jobs.txt only if the controller accepts it.
+		try {
+			connection.sendJob(userId, title, duration, LogWriter.formatDeadline(deadline), importance);
+		} catch (IOException exception) {
+			JOptionPane.showMessageDialog(this,
+					"Could not reach the VC Controller. Make sure it is running, then try again.",
+					"Job Not Sent", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		clearFields();
+		cardLayout.show(mainContainer, "dashUI");
+	}
 
 		// Store the job in jobs.txt
 		LogWriter.logJob(userId, title, String.valueOf(duration),
@@ -211,6 +226,29 @@ public class ClientPanel extends BasePanel {
 		cardLayout.show(mainContainer, "dashUI");
 	}
 
+	// Shows each message from the VC Controller as a popup. The first reply only
+	// confirms the request arrived; the second says whether it was accepted. An
+	// accepted job is now in jobs.txt, so the list is reloaded to show it.
+	private void showServerMessage(String message) {
+		if (message.equals(ClientConnection.ACKNOWLEDGMENT)) {
+			JOptionPane.showMessageDialog(this,
+					"Your job was sent to the VC Controller. You'll get a message when it is accepted or rejected.",
+					"Request Received", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+
+		JOptionPane.showMessageDialog(this, message, "VC Controller", JOptionPane.INFORMATION_MESSAGE);
+		if (isAccepted(message) && userId != null) {
+			openClient();
+			refreshJobList();
+		}
+	}
+
+	// The server's decision says "processed" (or "accepted") when a request is approved
+	private boolean isAccepted(String message) {
+		String lower = message.toLowerCase();
+		return lower.contains("processed") || lower.contains("accepted");
+	}
 	// Creates the Client object for the user who just logged in and reloads
 	// their saved jobs from jobs.txt, so new job IDs continue after the saved ones
 	private void openClient() {
