@@ -24,12 +24,13 @@ public class ClientPanel extends BasePanel {
 	private JTextField jobNameField;
 	private JTextField durationField; //min
 	private JTextField deadlineField; //hr
+	private JTextField priorityField;
 	private JLabel clientIdError;
 	private JLabel jobNameError;
 	private JLabel durationError;
 	private JLabel deadlineError;
+	private JLabel priorityError;
 
-	private JComboBox<Integer> importanceBox;
 	private JLabel clientIdLabel = new JLabel("Client:");
 	
 	// Sends jobs to the VC Controller (server) and shows its replies as popups
@@ -70,19 +71,20 @@ public class ClientPanel extends BasePanel {
 		jobNameField = new JTextField(FIELD_WIDTH);
 		durationField = new JTextField(FIELD_WIDTH);
 		deadlineField = new JTextField(FIELD_WIDTH);
-		importanceBox = new JComboBox<>(new Integer[]{1, 2, 3, 4, 5});
+		priorityField = new JTextField(FIELD_WIDTH);
 		clientIdError = createErrorLabel("Client ID does not match your account");
 		jobNameError = createErrorLabel("Job title is required (no commas)");
 		durationError = createErrorLabel("Must be a whole number greater than 0");
 		deadlineError = createErrorLabel("Must be a whole number greater than 0, or leave blank");
-
+		priorityError = createErrorLabel("Must be a valid integer");
+		
 		// The deadline is optional, if none is set the job is simply queued
 		nextRow = 0;
 		addFieldRow(p, "Client ID:", clientIdField, clientIdError);
 		addFieldRow(p, "Job Title:", jobNameField, jobNameError);
 		addFieldRow(p, "Estimate Job Duration in Minutes:", durationField, durationError);
 		addFieldRow(p, "Job Deadline in Hours:", deadlineField, deadlineError);
-		addComboRow(p, "Importance (1-5):", importanceBox);
+		addFieldRow(p, "Priority:", priorityField, priorityError);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;
@@ -173,6 +175,8 @@ public class ClientPanel extends BasePanel {
 				isPositiveInteger(durationField.getText()));
 		allValid &= checkField(deadlineField, deadlineError,
 				isBlank(deadlineField) || isPositiveInteger(deadlineField.getText()));
+		allValid &= checkField(priorityField, priorityError,
+				isPositiveInteger(priorityField.getText()));
 		return allValid;
 	}
 
@@ -181,11 +185,11 @@ public class ClientPanel extends BasePanel {
 		jobNameField.setText("");
 		durationField.setText("");
 		deadlineField.setText("");
+		priorityField.setText("");
 		checkField(jobNameField, jobNameError, true);
 		checkField(durationField, durationError, true);
 		checkField(deadlineField, deadlineError, true);
-
-		importanceBox.setSelectedIndex(0);
+		checkField(priorityField, priorityError, true);
 	}
 
 	// validates the form, creates the job, saves it and returns to the dashboard
@@ -197,7 +201,7 @@ public class ClientPanel extends BasePanel {
 		// Read the validated entries
 		String title = jobNameField.getText().trim();
 		int duration = Integer.parseInt(durationField.getText().trim());
-		int importance = (Integer) importanceBox.getSelectedItem();
+		int importance = Integer.parseInt(priorityField.getText().trim());
 
 		// The deadline is entered in hours from now, so turn it into a date and time
 		LocalDateTime deadline = null;
@@ -220,17 +224,7 @@ public class ClientPanel extends BasePanel {
 		cardLayout.show(mainContainer, "dashUI");
 	}
 
-		// Store the job in jobs.txt
-		LogWriter.logJob(userId, title, String.valueOf(duration),
-				LogWriter.formatDeadline(deadline), String.valueOf(importance));
 
-		JOptionPane.showMessageDialog(this,
-				"Job " + job.getJobID() + " submitted successfully!",
-				"Success", JOptionPane.INFORMATION_MESSAGE);
-		clearFields();
-		refreshJobList();
-		cardLayout.show(mainContainer, "dashUI");
-	}
 
 	// Shows each message from the VC Controller as a popup. The first reply only
 	// confirms the request arrived; the second says whether it was accepted. An
