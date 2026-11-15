@@ -34,3 +34,5 @@ The objective is to provide a system that:
 * Integrated the Java classes with the existing Vehicular Cloud Console GUI.
 * Added a priority field to support priority-based scheduling.
 * Calculated Average Waiting Time and Completion Time.
+
+### Milestone 5: Client Server
