@@ -182,10 +182,12 @@ public class ClientPanel extends BasePanel {
 
 	//empties the job form and hides its errors
 	public void clearFields() {
+		clientIdField.setText("");
 		jobNameField.setText("");
 		durationField.setText("");
 		deadlineField.setText("");
 		priorityField.setText("");
+		checkField(clientIdField, clientIdError, true);
 		checkField(jobNameField, jobNameError, true);
 		checkField(durationField, durationError, true);
 		checkField(deadlineField, deadlineError, true);
