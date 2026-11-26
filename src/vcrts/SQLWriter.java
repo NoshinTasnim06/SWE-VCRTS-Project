@@ -53,10 +53,6 @@ public class SQLWriter {
 		executeStatement(sql);
 	}
 	
-	public void delete() {
-		
-	}
-	
 	public void setVehicleTime(String id, int hours)
 	{
 		String sql = "";
