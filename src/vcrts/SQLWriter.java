@@ -10,7 +10,8 @@ public class SQLWriter {
 	private static String user = "";
 	private static String password = "";
 	
-	public SQLWriter() {
+	public SQLWriter()
+	{
 		try 
 		{
 			this.connection = DriverManager.getConnection(url, user, password);
@@ -22,7 +23,7 @@ public class SQLWriter {
 		}
 	}
 	
-	public void insert(String tableName, String... fields)
+	public void insert(String type, String... fields)
 	{
 		StringBuilder data = new StringBuilder();
 		String sql = "";
@@ -39,12 +40,53 @@ public class SQLWriter {
 			}
 		data.delete(data.length() - 2, data.length()); //remove extra comma
 		
-		if (tableName.equals("vehicle"))
-			sql = "insert into vehicle () values (" + data + ")";
+		if (type.equals("owner"))
+			sql = "insert into owner ()";
+		else if (type.equals("client"))
+			sql = "insert into client ()";
+		else if (type.equals("vehicle"))
+			sql = "insert into vehicle ()";
+		else
+			sql = "insert into job ()";
 		
-		try
-		{
-			statement.executeUpdate(sql);
+		sql += "values (" + data + ")";
+		executeStatement(sql);
+	}
+	
+	public void delete() {
+		
+	}
+	
+	public void setVehicleTime(String id, int hours)
+	{
+		String sql = "";
+		sql = "update vehicle set residency_time = " + hours + " where vehicleID = '" + id + "'";
+		executeStatement(sql);
+	}
+	
+	public void setVehicleStatus(String id, boolean available)
+	{
+		String sql = "";
+		String status = "";
+		if (available)
+			status = "'avaiable'";
+		else
+			status = "'not'";
+		sql = "update vehicle set vehicle_status = " + status + " where vehicleID = '" + id + "'";
+		executeStatement(sql);
+	}
+	
+	public void setJobStatus(String id, String status)
+	{
+		String sql = "";
+		sql = "update job set job_status = '" + status + "' where jobID = '" + id + "'"; 
+		executeStatement(sql);
+	}
+	
+	public void executeStatement(String sql)
+	{
+		try {
+			statement.execute(sql);
 		}
 		catch (SQLException e)
 		{
@@ -52,15 +94,8 @@ public class SQLWriter {
 		}
 	}
 	
-	public void delete() {
-		
-	}
-	
-	public void setStatus() {
-		
-	}
-	
-	public void close() {
+	public void close()
+	{
 		try
 		{
 			connection.close();
