@@ -1,2 +1,4 @@
 Timestamp, Vehicle ID, Owner ID, Make, Model, Year, License, RAM GB, CPU Cores, Storage GB, Residency Time, Status
 2026-11-15 18:19:31, usertest-1, usertest, honda, blue, 2000, xyz, 5, 6, 9, 5, Available
+2026-11-26 22:53:18, e-1, e, e, e, 2020, x, 3, 3, 3, 3, Available
+2026-11-27 10:43:41, t-1, t, t, t, 2000, v, 4, 4, 4, 4, Available

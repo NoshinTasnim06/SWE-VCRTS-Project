@@ -34,6 +34,8 @@ public class ControllerPanel extends BasePanel {
     private static final int JOB_CONNECTION = 5;
     private static final int VEHICLE_CONNECTION = 9;
     
+    private final SQLWriter sql = new SQLWriter();
+    
     // ---------------------------------------------------------------------
     // This method builds the requests screen: a section for pending job requests and a
     // section for pending vehicle requests, each with its own Accept and Decline buttons.
@@ -101,15 +103,19 @@ public class ControllerPanel extends BasePanel {
     	String type;
     	String id;
     	String connection;
+    	
     	if (isJob)
     	{
     		type = "Job";
     		String[] r = rowOf(jobPendingTable, row);
     		connection = r[JOB_CONNECTION];
-    		if (accept)
-    			id = LogWriter.logJob(r[0], r[1], r[2], r[3], r[4]);
-    		else
-    			id = r[1]; // a declined job never gets an ID, so use its name
+    		if (accept) {
+    		    id = LogWriter.logJob(r[0], r[1], r[2], r[3], r[4]);
+    		    String[] who = LogWriter.findUser("Client", r[0]);
+    		    if (who != null) sql.insert("client", r[0], who[2], who[3]);
+    		    sql.insert("job", id, r[0], r[1], r[2], r[3], r[4], "QUEUED");
+    		} else
+    		    id = r[1];; // a declined job never gets an ID, so use its name
     		jobPendingTable.removeRow(row);
     	}
     	else
@@ -117,10 +123,14 @@ public class ControllerPanel extends BasePanel {
     		type = "Vehicle";
     		String[] r = rowOf(vehiclePendingTable, row);
     		connection = r[VEHICLE_CONNECTION];
-    		if (accept)
-    			id = LogWriter.logVehicle(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
-    		else
-    			id = r[1] + " " + r[2]; // a declined vehicle never gets an ID, so use make and model
+    		
+    		if (accept) {
+    		    id = LogWriter.logVehicle(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+    		    String[] who = LogWriter.findUser("Owner", r[0]);
+    		    if (who != null) sql.insert("owner", r[0], who[2], who[3]);
+    		    sql.insert("vehicle", id, r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], "Available");
+    		} else
+    		    id = r[1] + " " + r[2]; // a declined vehicle never gets an ID, so use make and model
     		vehiclePendingTable.removeRow(row);
     	}
     	
